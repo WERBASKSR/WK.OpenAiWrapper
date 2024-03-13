@@ -1,35 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using OpenAI;
 
-namespace OpenAiWrapper
+namespace OpenAiWrapper;
+
+public static class InitializeExtensions
 {
-    public static class InitializeExtensions
+    public static IServiceCollection SetOpenAiApiKey(this IServiceCollection serviceCollection)
     {
-        public static ServiceCollection RegisterPilots(this ServiceCollection serviceCollection, params Pilot[] pilots)
-        {
-            foreach (Pilot pilot in pilots)
-            {
-                serviceCollection.AddKeyedSingleton(pilot.Name, pilot);
-            }
+        string? apiKey = ConfigurationManager.AppSettings.Get("OpenAiApiKey");
+        if (apiKey == null) throw new MissingFieldException("OpenAiApiKey is missing in AppSettings");
+        SetOpenAiApiKey(serviceCollection, apiKey);
+        return serviceCollection;
+    }
 
-            return serviceCollection;
-        }
-        
-        public static ServiceCollection RegisterOnThreadExpired(this ServiceCollection serviceCollection, Action<string,string> onThreadExpiredDelegate)
-        {
-            Constants.OnThreadExpiredDelegate = onThreadExpiredDelegate;
-            return serviceCollection;
-        }
+    public static IServiceCollection SetOpenAiApiKey(this IServiceCollection serviceCollection, string apiKey)
+    {
+        serviceCollection.AddSingleton<IOpenAiClient, Client>(p => new Client(p.GetService<AssistantHandler>(), apiKey));
+        return serviceCollection;
+    }
 
-        public static IServiceProvider UsePilots(this IServiceProvider serviceProvider)
-        {
-            Constants.ServiceProvider = serviceProvider;
-            return serviceProvider;
-        }
+    public static IServiceCollection RegisterOnThreadExpired(this IServiceCollection serviceCollection, Action<string,string> onThreadExpiredDelegate)
+    {
+        Constants.OnThreadExpiredDelegate = onThreadExpiredDelegate;
+        return serviceCollection;
+    }
+
+    public static IServiceCollection RegisterOpenAi(this IServiceCollection serviceCollection, params Pilot[] pilots)
+    {
+        List<string> pilotNames = pilots.Select(p => p.Name).ToList();
+        if (pilotNames.Distinct().Count() != pilotNames.Count) throw new ArgumentException("Pilot names must be unique.");
+
+        foreach (Pilot pilot in pilots) serviceCollection.AddKeyedSingleton(pilot.Name, pilot);
+
+        serviceCollection.AddSingleton<AssistantHandler>();
+        return serviceCollection;
     }
 }
