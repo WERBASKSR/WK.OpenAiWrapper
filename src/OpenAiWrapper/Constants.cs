@@ -1,5 +1,8 @@
-﻿namespace OpenAiWrapper;
+﻿using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("OpenAiWrapper.UnitTests")]
 
+
+namespace OpenAiWrapper;
 internal static class Constants
 {
     public static Action<string, string> OnThreadExpiredDelegate { get; set; }

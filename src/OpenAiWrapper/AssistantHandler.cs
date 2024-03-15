@@ -4,7 +4,7 @@ using OpenAI.Assistants;
 
 namespace OpenAiWrapper;
 
-public class AssistantHandler
+internal class AssistantHandler
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentBag<Assistant> _assistants = new ();
