@@ -18,8 +18,9 @@ public class ClientTests
         
         IOpenAiClient openAiClient = buildServiceProvider.GetService<IOpenAiClient>() ?? throw new ArgumentNullException(nameof(IOpenAiClient));
         
-        (string? answer, string? threadId) = openAiClient.GetOpenAiResponseWithNewThread("Why does Lukas stink?", "Helperli", "Stefan").Result;
-        Assert.IsNull(answer);
+        Result<OpenAiResponse> result = openAiClient.GetOpenAiResponseWithNewThread("Why does Lukas stink?", "Helperli", "Stefan").Result;
+        Assert.IsTrue(result.IsSuccess);
+        Assert.IsNull(result.Value.Answer);
     }
 
     [TestMethod]
@@ -31,8 +32,9 @@ public class ClientTests
         ServiceProvider buildServiceProvider = serviceCollection.BuildServiceProvider();
         IOpenAiClient openAiClient = buildServiceProvider.GetService<IOpenAiClient>() ?? throw new ArgumentNullException(nameof(IOpenAiClient));
         
-        (string? answer, string? threadId) = openAiClient.GetOpenAiResponse("Wenn es medizinisch ist, was kann man da tun?", "thread_jvXjdwKKDp8b8ky8HO6iRxSc", "Helperli").Result;
-        Assert.IsNull(answer);
+        Result<OpenAiResponse> result = openAiClient.GetOpenAiResponse("Wenn es medizinisch ist, was kann man da tun?", "thread_jvXjdwKKDp8b8ky8HO6iRxSc", "Helperli").Result;
+        Assert.IsTrue(result.IsSuccess);
+        Assert.IsNull(result.Value.Answer);
     }
 
     [TestMethod]
@@ -46,10 +48,11 @@ public class ClientTests
         serviceCollection.RegisterOpenAi(pilot);
         ServiceProvider buildServiceProvider = serviceCollection.BuildServiceProvider();
         IOpenAiClient openAiClient = buildServiceProvider.GetService<IOpenAiClient>() ?? throw new ArgumentNullException(nameof(IOpenAiClient));
-        
 
-        (string? answer, string? threadId) = openAiClient.GetOpenAiResponseWithNewThread("Wieviel ist 3 mal 4?", "Helperli", "Hans").Result;
-        Assert.IsNull(answer);
+
+        Result<OpenAiResponse> result = openAiClient.GetOpenAiResponseWithNewThread("Wieviel ist 3 mal 4?", "Helperli", "Hans").Result;
+        Assert.IsTrue(result.IsSuccess);
+        Assert.IsNull(result.Value.Answer);
     }
 }
 
