@@ -6,25 +6,11 @@ namespace OpenAiWrapper;
 
 internal record Client(AssistantHandler AssistantHandler, string ApiKey) : IOpenAiClient
 {
-    private readonly ThreadingDictionary<string, string> _assistantIds = new ();
-
     public OpenAIClient GetNewOpenAiClient => new (ApiKey);
 
-    private async Task<string> GetOrCreateAssistantId(string pilot, string user, OpenAIClient apiClient)
+    private async Task<Result<OpenAiResponse>> CreateAndSendMessage(string threadId, OpenAIClient apiClient, string assistantId)
     {
-        string pilotUserKey = MiscHelper.GetPilotUserKey(pilot, user);
-        if (_assistantIds.ContainsKey(pilotUserKey)) return _assistantIds.GetValue(pilotUserKey);
-
-        ListResponse<AssistantResponse> assistantsResponse = await apiClient.AssistantsEndpoint.ListAssistantsAsync();
-        AssistantResponse assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == pilotUserKey) 
-                                              ?? await apiClient.AssistantsEndpoint.CreateAssistantAsync(AssistantHandler.GetCreateAssistantRequest(user, pilot));
-        _assistantIds.Add(pilotUserKey, assistantResponse.Id);
-        return assistantResponse.Id;
-    }
-
-    private static async Task<Result<OpenAiResponse>> CreateAndSendMessage(string threadId, OpenAIClient apiClient, string assistantId)
-    {
-        RunResponse runResponse = await apiClient.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId)).WaitForDone();
+        RunResponse runResponse = await apiClient.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId)).WaitForDone(AssistantHandler);
 
         if (runResponse.Status != RunStatus.Completed) return Result<OpenAiResponse>.Error($"Run {runResponse.Id} was ended with the status {Enum.GetName(typeof(RunStatus), runResponse.Status)}.");
 
@@ -46,7 +32,7 @@ internal record Client(AssistantHandler AssistantHandler, string ApiKey) : IOpen
 
         if (pilot != null)
         {
-            assistantId = await GetOrCreateAssistantId(pilot, user, apiClient);
+            assistantId = await AssistantHandler.GetOrCreateAssistantId(user, pilot, apiClient);
         }
         else
         {
@@ -66,7 +52,7 @@ internal record Client(AssistantHandler AssistantHandler, string ApiKey) : IOpen
 
         ThreadResponse threadResponse = await apiClient.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new []
             { new Message(text)}, MiscHelper.GetDictionaryWithUser(user)));
-        string assistantId = await GetOrCreateAssistantId(pilot, user, apiClient);
+        string assistantId = await AssistantHandler.GetOrCreateAssistantId(user, pilot, apiClient);
 
         return await CreateAndSendMessage(threadResponse.Id, apiClient, assistantId);
     }

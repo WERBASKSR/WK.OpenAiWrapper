@@ -44,13 +44,14 @@ public class ClientTests
 
         serviceCollection.SetOpenAiApiKey("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");
         Pilot pilot = new ("Helperli", "Be Helpful. Answer in german.");
-        pilot.Tools.Add(Tool.FromFunc(nameof(MyClass.MultiplyValues), (Func<double, double, double>)new MyClass().MultiplyValues));
+        Tool tool = Tool.GetOrCreateTool(new MyClass(), nameof(MyClass.GetFullnameForInitials), "This function knows all full names for all initials that could be requested.");
+        pilot.Tools.Add(tool);
         serviceCollection.RegisterOpenAi(pilot);
         ServiceProvider buildServiceProvider = serviceCollection.BuildServiceProvider();
         IOpenAiClient openAiClient = buildServiceProvider.GetService<IOpenAiClient>() ?? throw new ArgumentNullException(nameof(IOpenAiClient));
 
 
-        Result<OpenAiResponse> result = openAiClient.GetOpenAiResponseWithNewThread("Wieviel ist 3 mal 4?", "Helperli", "Hans").Result;
+        Result<OpenAiResponse> result = openAiClient.GetOpenAiResponseWithNewThread("Was ist der vollständige Name zu folgenden Initialen: LS?\r\nNutze die Funktion GetFullnameForInitials für die Beantwortung!", "Helperli", "Hans").Result;
         Assert.IsTrue(result.IsSuccess);
         Assert.IsNull(result.Value.Answer);
     }
@@ -58,8 +59,13 @@ public class ClientTests
 
 public class MyClass
 {
-    public double MultiplyValues(double a, double b)
+    public async Task<string> GetFullnameForInitials(string initials)
     {
-        return a * b;
+        switch (initials)
+        {
+            case "LS": return "Lukilein Schachili";
+            case "SB": return "Großmeister B";
+            default: return "unknown";
+        }
     }
 }
