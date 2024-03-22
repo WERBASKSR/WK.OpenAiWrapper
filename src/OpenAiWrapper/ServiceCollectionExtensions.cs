@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace OpenAiWrapper;
 
-public static class InitializeExtensions
+public static class ServiceCollectionExtensions
 {
     public static IServiceCollection SetOpenAiApiKey(this IServiceCollection serviceCollection)
     {
@@ -16,12 +16,6 @@ public static class InitializeExtensions
     public static IServiceCollection SetOpenAiApiKey(this IServiceCollection serviceCollection, string apiKey)
     {
         serviceCollection.AddSingleton<IOpenAiClient, Client>(p => new Client(p.GetService<AssistantHandler>(), apiKey));
-        return serviceCollection;
-    }
-
-    public static IServiceCollection RegisterOnThreadExpired(this IServiceCollection serviceCollection, Action<string,string> onThreadExpiredDelegate)
-    {
-        Constants.OnThreadExpiredDelegate = onThreadExpiredDelegate;
         return serviceCollection;
     }
 

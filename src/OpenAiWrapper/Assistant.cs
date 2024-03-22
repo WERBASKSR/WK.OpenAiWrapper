@@ -11,7 +11,7 @@ internal record Assistant(string User, Pilot Pilot) : IEquatable<(string user, s
     private CreateAssistantRequest GetCreateAssistantRequest()
     {
         return new CreateAssistantRequest(Pilot.Model, MiscHelper.GetPilotUserKey(Pilot.Name, User), null, 
-            $"{Pilot.Instructions}\r\n{Constants.AiPromptUseName.Replace("%", User)}", Pilot.Tools, null, MiscHelper.GetDictionaryWithUser(User));
+            $"{Pilot.Instructions}\r\n{string.Format(Prompts.AiPromptUseName, User)}", Pilot.Tools, null, MiscHelper.GetDictionaryWithUser(User));
     }
 
     public static bool operator== (Assistant assistant, (string user, string pilot) keyTuple)

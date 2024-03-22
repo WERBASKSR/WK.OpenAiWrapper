@@ -2,7 +2,7 @@
 
 namespace OpenAiWrapper;
 
-internal static class InternalExtensions
+internal static class RunResponseExtensions
 {
     internal static async Task<RunResponse> WaitForDone(this Task<RunResponse> runResponseTask)
     {
