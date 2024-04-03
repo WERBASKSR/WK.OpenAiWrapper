@@ -1,91 +1,102 @@
-Here's a README template, along with instructions on how to customize it using insights derived from your provided code and comments. I understand that a perfect README requires human refinement for any given project, but this should serve as a strong foundation!
+# OpenAiWrapper
 
-**README.md**
+`OpenAiWrapper` is an elegant .NET library engineered to offer a seamless interface for interacting with the OpenAI API. This library acts as a wrapper around the `OpenAI-DotNet` package by RageAgainstThePixel, aiming to simplify the intricacies involved in leveraging various OpenAI functions and facilitating smoother AI interactions. `OpenAiWrapper` enhances the good foundation laid by `OpenAI-DotNet`, focusing on making the application process more intuitive and developer-friendly, particularly for AI-assisted workflows and thread management.
 
-# OpenAiWrapper 
+## Features
 
-A C# wrapper library simplifying interactions with the OpenAI API, with an emphasis on assistant-based workflows and threading.
+With `OpenAiWrapper`, developers gain access to a suite of functionalities designed to streamline the interaction with OpenAI's AI models:
 
-**Key Features**
+- **Thread Management**: Automate thread handling for conversational AI applications, including message sending, response retrieval, and new thread creation.
+- **Customizable Assistants**: Establish AI assistants with custom instructions and behavior models tailored to fit project specifics.
+- **API Integration**: Direct and efficient integration with the OpenAI API for leveraging advanced language models.
+- **Result Objects**: Convenient result objects grant easy access to AI responses along with any associated errors or metadata.
 
-* **Effortless Thread Management:** Handles thread creation, message sending, and response retrieval, streamlining conversational AI interactions.
-* **Customizable Assistants:**  Define unique AI assistants with tailored instructions and tools to align their behavior with specific project needs.
-* **Seamless API Integration:** Leverages the OpenAI API for robust language model access.
-* **Dependency Injection:** Designed to work seamlessly with dependency injection frameworks.
-* **Result Objects:** Provides structured result objects for convenient access to responses and any associated errors or metadata.
+## Getting Started
 
-**Installation**
+### Configuration
 
-Using the NuGet package manager:
+Begin your `OpenAiWrapper` journey by obtaining an OpenAI API key from [OpenAI](https://beta.openai.com/account/api-keys).
 
-```bash
-Install-Package OpenAiWrapper
+#### Set your API Key:
+
+Your API key can be configured in your `appsettings.json` as follows:
+
+```json
+{
+  "OpenAiApiKey": "YOUR_API_KEY"
+}
 ```
 
-**Configuration**
+## Installation
 
-1. **Obtain your OpenAI API key:**  Get this from [https://beta.openai.com/account/api-keys](https://beta.openai.com/account/api-keys) 
-2. **Set the API key:** 
-   * **Environment Variable:** `OPENAI_API_KEY`
-   * **appsettings.json:** 
-     ```json
-     {
-       "OpenAiApiKey": "YOUR_API_KEY"
-     }
-     ```
+Integrate `OpenAiWrapper` into your .NET project effortlessly:
 
-**Basic Usage**
+```shell
+dotnet add package OpenAiWrapper
+```
+
+## Usage 
+
+`OpenAiWrapper` exposes the `IOpenAiClient` interface, simplifying your interactions with the OpenAI API:
+
+### Key Interface Methods
+
+#### GetNewOpenAiClient
+
+- Instantiates a new OpenAI client with your provided API key.
+
+#### GetOpenAiResponse
+
+- Fetches an OpenAI response from an existing thread with parameters for `text`, `threadId`, and an optional `pilot`.
+
+#### GetOpenAiResponseWithNewThread
+
+- Initiates a new conversation thread and retrieves an OpenAI response, requiring `text`, `pilot`, and `user` parameters.
+
+### Example Usage
+
+Below is an illustrative guide to get you started:
 
 ```csharp
 using OpenAiWrapper;
 
-// Configure services in your Startup.cs or equivalent
+// Configure services for `OpenAiWrapper`
 services.SetOpenAiApiKey() 
-        .RegisterOpenAi(new Pilot("HelpfulBot", "Provide informative and polite responses.")); 
+        .RegisterOpenAi(new Pilot("HelpfulBot", "Provide accurate and respectful responses.")); 
 
-// Inject the IOpenAiClient where you need to use it
+// Utilize `IOpenAiClient` for AI interactions
 var client = serviceProvider.GetService<IOpenAiClient>();
 
-// Get a response within an existing thread
-var response = await client.GetOpenAiResponse("Continue this conversation...", "thread-123", pilot: "HelpfulBot");
-
-// Or start a new thread
-var newThreadResponse = await client.GetOpenAiResponseWithNewThread("Can you summarize this article for me? [Article Text Here]", "HelpfulBot", "user1"); 
+// Engage in AI interactions within an existing thread or commence a new one
+var ongoingThreadResponse = await client.GetOpenAiResponse("Let's keep the conversation going...", "thread-123", pilot: "HelpfulBot");
+var newThreadResponse = await client.GetOpenAiResponseWithNewThread("Summarize this document for me: [Document Text]", "HelpfulBot", "user1");
 ```
 
-**Customization**
+## Customization
 
-* **Define Pilots:** Create `Pilot` objects to configure your AI assistants.
-   ```csharp
-   new Pilot("Summarizer", "Summarize the provided text.", model: "text-davinci-003") 
-   ```
-* **Tweak Instructions:** Fine-tune assistant behavior by adjusting instructions in the `Pilot` constructor.
-* **Add Tools (Optional):**  Incorporate external tools to augment your assistants' capabilities (refer to the OpenAI API documentation for compatible tools).
+`OpenAiWrapper` allows significant customization to fit your specific requirements:
 
-**Project Structure**
+- **Define Pilots**: Tailor AI assistants with specific instructions and behaviors using the `Pilot` objects.
+- **Adjust Instructions**: Modify your assistant's instructions via the `Pilot` constructor for precise functionalities.
+- **Incorporate Tools**: Optimize your assistant's functionality with external tools as per OpenAI API guidelines.
 
-* **OpenAiWrapper:** The core library containing the primary interface, client implementation, and essential classes.
-* **OpenAiWrapper.UnitTests:**  Unit tests ensuring library robustness.
+## Testing
 
-**Dependencies**
+Ensure reliability with the included unit tests in the `ClientTests` class. Here is a setup example:
 
-* OpenAI .NET SDK
-* Microsoft.Extensions.DependencyInjection (Optional, but recommended)
+```csharp
+ServiceCollection serviceCollection = new ();
+serviceCollection.SetOpenAiApiKey("your-api-key");
+serviceCollection.RegisterOpenAi(new Pilot("Helperli", "Be resourceful. Respond in German."));
 
-**Contributions**
+ServiceProvider buildServiceProvider = serviceCollection.BuildServiceProvider();
 
-We welcome contributions! To get started, please raise an issue to discuss your idea and then submit a pull request.
+IOpenAiClient openAiClient = buildServiceProvider.GetService<IOpenAiClient>() ?? throw new ArgumentNullException(nameof(IOpenAiClient));
 
-**Disclaimer**
+Result<OpenAiResponse> result = openAiClient.GetOpenAiResponseWithNewThread("Why does Lukas have a peculiar smell?", "Helperli", "Stefan").Result;
+Assert.IsTrue(result.IsSuccess);
+Assert.IsNull(result.Value.Answer);
+```
+*Remember to replace `"your-api-key"` with your actual OpenAI API key.*
 
-This library is designed to facilitate interactions with the OpenAI API but does not guarantee the quality or accuracy of responses.  Use the generated responses responsibly.
-
-**Let's Build Something Amazing!** 
-
-**How to Enhance This README**
-
-* **Code Analysis:** Perform a deeper analysis of your source code to identify its primary functions and use cases. Highlight these in the README.
-* **Example Expansion:** Provide a richer set of usage examples, showcasing various scenarios and assistant configurations.
-* **Visuals:** Consider including diagrams (if applicable) to illustrate concepts like workflows or assistant interactions. 
-
-Let me know if you'd like help tailor the README specifically for your codebase!
+---
