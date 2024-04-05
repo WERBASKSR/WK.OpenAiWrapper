@@ -23,7 +23,9 @@ Your API key can be configured in your `appsettings.json` as follows:
 
 ```json
 {
-  "OpenAiApiKey": "YOUR_API_KEY"
+  "OpenAi": {
+    "ApiKey": "YOUR_API_KEY"
+  }
 }
 ```
 
