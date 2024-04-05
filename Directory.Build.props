@@ -1,0 +1,12 @@
+﻿<Project>
+    <PropertyGroup>
+        <Deterministic>true</Deterministic>
+        <Company>WERBAS GmbH</Company>
+        <Copyright>Copyright © $([System.DateTime]::Now.ToString(yyyy)), $(Company)</Copyright>
+        <Authors>Stefan S. Bechtel, Lukas Schachner</Authors>
+    </PropertyGroup>
+    
+    <PropertyGroup>
+        <UseArtifactsOutput>true</UseArtifactsOutput>
+    </PropertyGroup>
+</Project>

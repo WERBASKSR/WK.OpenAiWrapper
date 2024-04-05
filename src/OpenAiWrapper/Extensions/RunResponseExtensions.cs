@@ -1,13 +1,14 @@
 ﻿using OpenAI.Assistants;
 using OpenAI.Threads;
 
-namespace OpenAiWrapper;
+namespace OpenAiWrapper.Extensions;
 
 internal static class RunResponseExtensions
 {
-    internal static async Task<RunResponse> WaitForDone(this Task<RunResponse> runResponseTask, AssistantHandler assistantHandler)
+    internal static async Task<RunResponse> WaitForDone(this Task<RunResponse> runResponseTask,
+        AssistantHandler assistantHandler)
     {
-        RunResponse runResponse = await runResponseTask;
+        var runResponse = await runResponseTask;
         return await WaitForDone(runResponse, assistantHandler);
     }
 
@@ -17,8 +18,9 @@ internal static class RunResponseExtensions
         switch (runResponse.Status)
         {
             case RunStatus.RequiresAction:
-                AssistantResponse assistantResponse = await assistantHandler.GetAssistantResponse(runResponse.AssistantId);
-                IReadOnlyList<ToolOutput> outputs = await assistantResponse.GetToolOutputsAsync(runResponse.RequiredAction.SubmitToolOutputs.ToolCalls);
+                var assistantResponse = await assistantHandler.GetAssistantResponseAsync(runResponse.AssistantId);
+                IReadOnlyList<ToolOutput> outputs =
+                    await assistantResponse.GetToolOutputsAsync(runResponse.RequiredAction.SubmitToolOutputs.ToolCalls);
                 runResponse = await runResponse.SubmitToolOutputsAsync(outputs);
                 runResponse = await runResponse.WaitForDone(assistantHandler);
                 break;
@@ -34,6 +36,7 @@ internal static class RunResponseExtensions
                 break;
             default: throw new ArgumentOutOfRangeException();
         }
+
         return runResponse;
     }
 }

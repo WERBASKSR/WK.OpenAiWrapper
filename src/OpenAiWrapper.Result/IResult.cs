@@ -1,4 +1,4 @@
-﻿namespace OpenAiWrapper;
+﻿namespace OpenAiWrapper.Result;
 
 public interface IResult
 {

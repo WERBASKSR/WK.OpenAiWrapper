@@ -1,3 +1,3 @@
 ﻿namespace OpenAiWrapper;
 
-public record OpenAiResponse(string Answer, string ThreadId);
+public readonly record struct OpenAiResponse(string Answer, string ThreadId);
