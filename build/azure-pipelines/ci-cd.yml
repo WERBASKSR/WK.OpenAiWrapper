@@ -1,0 +1,144 @@
+name: "$(Date:yyyyMMdd)$(Rev:.rr)"
+appendCommitMessageToRunName: false
+pool:
+  vmImage: 'ubuntu-latest'
+trigger:
+  - develop
+  - main
+
+parameters:
+  - name: onlyNuget
+    displayName: Only create NuGet
+    type: boolean
+    default: false
+
+variables:
+  buildConfiguration: 'Release'
+  disable.coverage.autogenerate: 'true'
+  vstsFeedId: 'Innovation Area/WERBAS-Libraries'
+  onlyCreateNuGet: ${{ parameters.onlyNuget }}
+
+jobs:
+  - job: Build_Test
+    condition: not(eq(variables['onlyCreateNuGet'], true))
+    displayName: 'Build & Test'
+    steps:
+      # Use the DotNet version from global.json
+      - task: UseDotNet@2
+        displayName: Use .NET SDK version from global.json
+        inputs:
+          packageType: "sdk"
+          useGlobalJson: true
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore *.sln'
+        inputs:
+          command: 'restore'
+          feedsToUse: "config"
+          projects: '*.sln'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Build *.sln'
+        inputs:
+          command: 'build'
+          arguments: '--configuration $(buildConfiguration) --no-restore' # Update this to match your need
+          projects: '*.sln'
+
+      # Run all tests with '--collect:"XPlat Code Coverage"' to generate the code coverage file
+      - task: DotNetCoreCLI@2
+        displayName: 'Running all tests'
+        inputs:
+          command: test
+          projects: 'test/**/*.csproj'
+          arguments: '--configuration $(buildConfiguration) --collect:"XPlat Code Coverage"'
+          nobuild: true
+          publishTestResults: true
+
+      # Generate the report using ReportGenerator (https://github.com/danielpalme/ReportGenerator)
+      - task: reportgenerator@4
+        displayName: Create code coverage report
+        inputs:
+          reports: $(Agent.TempDirectory)/**/coverage.cobertura.xml
+          targetdir: $(Build.SourcesDirectory)/CodeCoverage
+          reporttypes: 'HtmlInline_AzurePipelines_Dark;Cobertura'
+
+      # Publish the code coverage result (summary and web site)
+      # The summary allows to view the coverage percentage in the summary tab
+      # The web site allows to view which lines are covered directly in Azure Pipeline
+      - task: PublishCodeCoverageResults@1
+        displayName: 'Publish code coverage'
+        inputs:
+          codeCoverageTool: Cobertura
+          summaryFileLocation: '$(Build.SourcesDirectory)/CodeCoverage/Cobertura.xml'
+          reportDirectory: '$(Build.SourcesDirectory)/CodeCoverage'
+
+  - job: Publish_NuGet
+    dependsOn: Build_Test
+    condition: and(or(succeeded(),eq(variables['onlyCreateNuGet'], true)), or(eq(variables['build.sourceBranch'], 'refs/heads/develop'), eq(variables['build.sourceBranch'], 'refs/heads/main'), and(startsWith(variables['build.sourceBranch'], 'refs/heads/feature/'), eq(variables['onlyCreateNuGet'], true))))
+    displayName: 'Publish NuGets'
+    steps:
+      # Use the DotNet version from global.json
+      - task: UseDotNet@2
+        displayName: Use .NET SDK version from global.json
+        inputs:
+          packageType: "sdk"
+          useGlobalJson: true
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore NuGets'
+        inputs:
+          command: 'restore'
+        
+      - task: UseGitVersion@5
+        displayName: gitversion
+        inputs:
+          versionSpec: '5.x'
+          updateAssemblyInfo: true
+      
+      - task: PowerShell@2
+        displayName: 'Create BuildNumberClean'
+        inputs:
+          targetType: 'inline'
+          script: |
+            $cleanBuildNumber = $Env:BUILD_BUILDNUMBER -replace '[.]',''
+            Write-Host "##vso[task.setvariable variable=BuildNumberClean]$($cleanBuildNumber)"
+          failOnStderr: true
+          showWarnings: true  
+      
+      - task: DotNetCoreCLI@2
+        displayName: 'Create develop OpenAiWrapper'
+        condition: eq(variables['build.sourceBranch'], 'refs/heads/develop')
+        inputs:
+          command: 'custom'
+          projects: |
+            src/OpenAiWrapper/OpenAiWrapper.csproj
+          custom: 'pack'
+          arguments: '-p:PackageVersion=$(GitVersion.SemVer).$(BuildNumberClean)-develop -p:ContinuousIntegrationBuild=true -p:Deterministic=true --configuration $(BuildConfiguration) -p:SymbolPackageFormat=snupkg --include-source --include-symbols --output $(Build.ArtifactStagingDirectory) --no-restore'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Create feature OpenAiWrapper'
+        condition: startsWith(variables['build.sourceBranch'], 'refs/heads/feature/')
+        inputs:
+          command: 'custom'
+          projects: |
+            src/OpenAiWrapper/OpenAiWrapper.csproj
+          custom: 'pack'
+          arguments: '-p:PackageVersion=$(GitVersion.SemVer).$(BuildNumberClean)-feature -p:ContinuousIntegrationBuild=true -p:Deterministic=true --configuration $(BuildConfiguration) -p:SymbolPackageFormat=snupkg --include-source --include-symbols --output $(Build.ArtifactStagingDirectory) --no-restore'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Create OpenAiWrapper'
+        condition: eq(variables['build.sourceBranch'], 'refs/heads/main')
+        inputs:
+          command: 'custom'
+          projects: |
+            src/SRS.NuGets.GermanTaxNumber/SRS.NuGets.GermanTaxNumber.csproj
+          custom: 'pack'
+          arguments: '-p:PackageVersion=$(GitVersion.SemVer).0 -p:ContinuousIntegrationBuild=true -p:Deterministic=true --configuration $(BuildConfiguration) -p:SymbolPackageFormat=snupkg --include-source --include-symbols --output $(Build.ArtifactStagingDirectory) --no-restore'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Push NuGets'
+        inputs:
+          command: 'push'
+          packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+          nuGetFeedType: 'internal'
+          publishVstsFeed: $(vstsFeedId)

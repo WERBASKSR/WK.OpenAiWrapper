@@ -7,6 +7,17 @@
     </PropertyGroup>
     
     <PropertyGroup>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <WarningsAsErrors/>
         <UseArtifactsOutput>true</UseArtifactsOutput>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == ''">
+        <Configuration>Debug</Configuration>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <ArtifactsPath Condition="'$(SolutionDir)'==''">../../artifacts</ArtifactsPath>
+        <ArtifactsPath Condition="'$(SolutionDir)'!=''">$(SolutionDir)artifacts</ArtifactsPath>
     </PropertyGroup>
 </Project>
