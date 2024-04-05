@@ -84,17 +84,19 @@ jobs:
           packageType: "sdk"
           useGlobalJson: true
 
+      - task: gitversion/setup@1.1.1
+        displayName: Install GitVersion
+        inputs:
+          versionSpec: '5.x'
+          
       - task: DotNetCoreCLI@2
         displayName: 'Restore NuGets'
         inputs:
           command: 'restore'
         
-      - task: UseGitVersion@5
-        displayName: gitversion
-        inputs:
-          versionSpec: '5.x'
-          updateAssemblyInfo: true
-      
+      - task: gitversion/execute@1.1.1
+        displayName: Determine Version
+
       - task: PowerShell@2
         displayName: 'Create BuildNumberClean'
         inputs:
