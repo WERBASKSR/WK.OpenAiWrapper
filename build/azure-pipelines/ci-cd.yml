@@ -34,7 +34,6 @@ jobs:
         displayName: 'Restore *.sln'
         inputs:
           command: 'restore'
-          feedsToUse: "config"
           projects: '*.sln'
 
       - task: DotNetCoreCLI@2

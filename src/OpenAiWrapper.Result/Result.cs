@@ -2,7 +2,7 @@
 
 namespace OpenAiWrapper.Result;
 
-public class Result<T> : IResult
+public class Result<T>
 {
     protected Result()
     {
