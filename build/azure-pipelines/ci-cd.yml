@@ -120,7 +120,7 @@ jobs:
         inputs:
           command: 'custom'
           projects: |
-            src/OpenAiWrapper/OpenAiWrapper.csproj
+            src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj
           custom: 'pack'
           arguments: '-p:PackageVersion=$(GitVersion.SemVer).$(BuildNumberClean)-develop -p:ContinuousIntegrationBuild=true -p:Deterministic=true --configuration $(BuildConfiguration) -p:SymbolPackageFormat=snupkg --include-source --include-symbols --output $(Build.ArtifactStagingDirectory) --no-restore'
 
@@ -130,7 +130,7 @@ jobs:
         inputs:
           command: 'custom'
           projects: |
-            src/OpenAiWrapper/OpenAiWrapper.csproj
+            src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj
           custom: 'pack'
           arguments: '-p:PackageVersion=$(GitVersion.SemVer).$(BuildNumberClean)-feature -p:ContinuousIntegrationBuild=true -p:Deterministic=true --configuration $(BuildConfiguration) -p:SymbolPackageFormat=snupkg --include-source --include-symbols --output $(Build.ArtifactStagingDirectory) --no-restore'
 
@@ -140,7 +140,7 @@ jobs:
         inputs:
           command: 'custom'
           projects: |
-            src/OpenAiWrapper/OpenAiWrapper.csproj
+            src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj
           custom: 'pack'
           arguments: '-p:PackageVersion=$(GitVersion.SemVer).0 -p:ContinuousIntegrationBuild=true -p:Deterministic=true --configuration $(BuildConfiguration) -p:SymbolPackageFormat=snupkg --include-source --include-symbols --output $(Build.ArtifactStagingDirectory) --no-restore'
 
