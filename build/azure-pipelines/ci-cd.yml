@@ -111,8 +111,6 @@ jobs:
         displayName: 'Restore NuGets'
         inputs:
           command: 'restore'
-          feedsToUse: "config"
-          nugetConfigPath: "nuget.config"
           projects: |
             src/OpenAiWrapper/OpenAiWrapper.csproj
 
