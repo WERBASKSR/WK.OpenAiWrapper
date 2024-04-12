@@ -144,14 +144,14 @@ jobs:
           custom: 'pack'
           arguments: '-p:PackageVersion=$(GitVersion.SemVer).0 -p:ContinuousIntegrationBuild=true -p:Deterministic=true --configuration $(BuildConfiguration) -p:SymbolPackageFormat=snupkg --include-source --include-symbols --output $(Build.ArtifactStagingDirectory) --no-restore'
 
-      - task: DotNetCoreCLI@2
-        displayName: 'Push NuGets'
-        inputs:
-          command: 'push'
-          packagesToPush: '$(Build.ArtifactStagingDirectory)/*.*nupkg'
-          nuGetFeedType: 'internal'
-          publishVstsFeed: $(vstsFeedId)
-          allowPackageConflicts: true
+#      - task: DotNetCoreCLI@2
+#        displayName: 'Push NuGets'
+#        inputs:
+#          command: 'push'
+#          packagesToPush: '$(Build.ArtifactStagingDirectory)/*.*nupkg'
+#          nuGetFeedType: 'internal'
+#          publishVstsFeed: $(vstsFeedId)
+#          allowPackageConflicts: true
           
       - task: NuGetCommand@2
         displayName: 'Push NuGets to NuGet.org'
