@@ -1,14 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OpenAiWrapper.Extensions;
+using Xunit;
 
 namespace OpenAiWrapper.UnitTests;
 
-[TestClass]
 public class ClientTests
 {
-    [TestMethod]
-    public void GetAssistaHandler()
+    [Fact]
+    public void GetAssistantHandler()
     {
         var serviceCollection = new ServiceCollection();
         serviceCollection.RegisterOpenAi();

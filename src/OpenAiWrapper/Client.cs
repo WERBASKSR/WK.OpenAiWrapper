@@ -30,7 +30,7 @@ internal class Client : IOpenAiClient
 
         if (pilot != null)
         {
-            assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, apiClient);
+            assistantId = await _assistantHandler.GetOrCreateAssistantId(user!, pilot, apiClient);
         }
         else
         {
