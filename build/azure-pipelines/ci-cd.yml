@@ -159,9 +159,9 @@ jobs:
           nuGetFeedType: 'internal'
           publishVstsFeed: $(vstsFeedId)
           
-  - task: DotNetCoreCLI@2
-    inputs:
-      command: 'push'
-      packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-      nugetFeedType: 'external'
-      externalEndPoint: 'nugetorg'
+      - task: DotNetCoreCLI@2
+        inputs:
+          command: 'push'
+          packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+          nugetFeedType: 'external'
+          externalEndPoint: 'nugetorg'
