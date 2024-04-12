@@ -115,6 +115,13 @@ jobs:
             src/OpenAiWrapper/OpenAiWrapper.csproj
 
       - task: DotNetCoreCLI@2
+        displayName: 'Build *.sln'
+        inputs:
+          command: 'build'
+          arguments: '--configuration $(buildConfiguration) --no-restore' # Update this to match your need
+          projects: '*.sln'
+
+      - task: DotNetCoreCLI@2
         displayName: 'Create develop OpenAiWrapper'
         condition: eq(variables['build.sourceBranch'], 'refs/heads/develop')
         inputs:
