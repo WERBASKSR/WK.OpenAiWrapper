@@ -87,11 +87,6 @@ jobs:
         displayName: Install GitVersion
         inputs:
           versionSpec: '5.x'
-          
-      - task: DotNetCoreCLI@2
-        displayName: 'Restore NuGets'
-        inputs:
-          command: 'restore'
         
       - task: gitversion/execute@1.1.1
         displayName: Determine Version
@@ -155,14 +150,16 @@ jobs:
         displayName: 'Push NuGets'
         inputs:
           command: 'push'
-          packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+          packagesToPush: '$(Build.ArtifactStagingDirectory)/*.*nupkg'
           nuGetFeedType: 'internal'
           publishVstsFeed: $(vstsFeedId)
+          allowPackageConflicts: true
           
       - task: NuGetCommand@2
-        displayName: 'NuGet push'
+        displayName: 'Push NuGets to NuGet.org'
         inputs:
           command: push
           nuGetFeedType: external
+          packagesToPush: '$(Build.ArtifactStagingDirectory)/*.*nupkg'
           publishFeedCredentials: nugetorg
           allowPackageConflicts: true
