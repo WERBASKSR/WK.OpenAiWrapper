@@ -27,7 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\OpenAiWrapper.Result\OpenAiWrapper.Result.csproj"/>
+        <ProjectReference Include="..\WK.OpenAiWrapper.Result\WK.OpenAiWrapper.Result.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace OpenAiWrapper.Extensions;
+namespace WK.OpenAiWrapper.Extensions;
 
 public static class ServiceCollectionExtensions
 {

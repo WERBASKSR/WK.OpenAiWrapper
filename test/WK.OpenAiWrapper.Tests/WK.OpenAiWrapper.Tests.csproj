@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\OpenAiWrapper\OpenAiWrapper.csproj"/>
+        <ProjectReference Include="..\..\src\WK.OpenAiWrapper\WK.OpenAiWrapper.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,7 +1,7 @@
 ﻿using OpenAI.Assistants;
 using OpenAI.Threads;
 
-namespace OpenAiWrapper.Extensions;
+namespace WK.OpenAiWrapper.Extensions;
 
 internal static class RunResponseExtensions
 {

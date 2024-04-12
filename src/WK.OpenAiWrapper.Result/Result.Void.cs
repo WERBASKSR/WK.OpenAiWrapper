@@ -1,4 +1,4 @@
-﻿namespace OpenAiWrapper.Result;
+﻿namespace WK.OpenAiWrapper.Result;
 
 public class Result : Result<Result>
 {

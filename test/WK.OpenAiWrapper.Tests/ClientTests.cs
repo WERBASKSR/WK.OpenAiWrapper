@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using OpenAiWrapper.Extensions;
+using WK.OpenAiWrapper.Extensions;
 using Xunit;
 
-namespace OpenAiWrapper.UnitTests;
+namespace WK.OpenAiWrapper.UnitTests;
 
 public class ClientTests
 {

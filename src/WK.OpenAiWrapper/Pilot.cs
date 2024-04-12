@@ -1,6 +1,6 @@
 ﻿using OpenAI;
 
-namespace OpenAiWrapper;
+namespace WK.OpenAiWrapper;
 
 public record Pilot(string Name, string Instructions, string Model = "gpt-4")
 {

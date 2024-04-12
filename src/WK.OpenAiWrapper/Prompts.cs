@@ -1,4 +1,4 @@
-﻿namespace OpenAiWrapper;
+﻿namespace WK.OpenAiWrapper;
 
 internal static class Prompts
 {

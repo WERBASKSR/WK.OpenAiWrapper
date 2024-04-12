@@ -2,9 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using OpenAI;
 using OpenAI.Assistants;
-using OpenAiWrapper.Helper;
+using WK.OpenAiWrapper.Helper;
 
-namespace OpenAiWrapper;
+namespace WK.OpenAiWrapper;
 
 internal class AssistantHandler(IServiceProvider serviceProvider)
 {

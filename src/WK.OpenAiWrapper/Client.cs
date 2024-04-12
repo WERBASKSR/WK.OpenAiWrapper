@@ -1,10 +1,10 @@
 ﻿using OpenAI;
 using OpenAI.Threads;
-using OpenAiWrapper.Extensions;
-using OpenAiWrapper.Helper;
-using OpenAiWrapper.Result;
+using WK.OpenAiWrapper.Extensions;
+using WK.OpenAiWrapper.Result;
+using WK.OpenAiWrapper.Helper;
 
-namespace OpenAiWrapper;
+namespace WK.OpenAiWrapper;
 
 internal class Client : IOpenAiClient
 {

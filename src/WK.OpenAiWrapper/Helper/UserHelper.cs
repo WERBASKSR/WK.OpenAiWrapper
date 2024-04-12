@@ -1,4 +1,4 @@
-﻿namespace OpenAiWrapper.Helper;
+﻿namespace WK.OpenAiWrapper.Helper;
 
 internal static class UserHelper
 {
