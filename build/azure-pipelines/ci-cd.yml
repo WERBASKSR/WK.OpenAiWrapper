@@ -106,8 +106,6 @@ jobs:
         displayName: 'Restore NuGets'
         inputs:
           command: 'restore'
-          projects: |
-            src/OpenAiWrapper/OpenAiWrapper.csproj
 
       - task: DotNetCoreCLI@2
         displayName: 'Build *.sln'
