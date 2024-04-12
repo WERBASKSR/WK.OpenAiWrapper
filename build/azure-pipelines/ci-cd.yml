@@ -105,7 +105,17 @@ jobs:
             Write-Host "##vso[task.setvariable variable=BuildNumberClean]$($cleanBuildNumber)"
           failOnStderr: true
           showWarnings: true  
-      
+
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore NuGets'
+        inputs:
+          command: 'restore'
+          feedsToUse: "config"
+          nugetConfigPath: "nuget.config"
+          projects: |
+            src/OpenAiWrapper/OpenAiWrapper.csproj
+
       - task: DotNetCoreCLI@2
         displayName: 'Create develop OpenAiWrapper'
         condition: eq(variables['build.sourceBranch'], 'refs/heads/develop')
