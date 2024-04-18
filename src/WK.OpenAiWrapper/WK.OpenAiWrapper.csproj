@@ -21,13 +21,15 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" PrivateAssets="All"/>
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
         <PackageReference Include="OpenAI-DotNet"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\WK.OpenAiWrapper.Result\WK.OpenAiWrapper.Result.csproj" />
+        <ProjectReference Include="..\WK.OpenAiWrapper.Result\WK.OpenAiWrapper.Result.csproj"/>
     </ItemGroup>
 
 </Project>

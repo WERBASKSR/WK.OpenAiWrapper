@@ -6,14 +6,6 @@ namespace WK.OpenAiWrapper;
 public interface IOpenAiClient
 {
     /// <summary>
-    ///     Instantiates a new OpenAI client instance.
-    /// </summary>
-    /// <returns>
-    ///     A new OpenAI client instance initialized with the specified API key.
-    /// </returns>
-    OpenAIClient NewOpenAiClient();
-
-    /// <summary>
     ///     Gets an OpenAI response within an existing thread.
     /// </summary>
     /// <param name="text">The text to send to the OpenAI service.</param>

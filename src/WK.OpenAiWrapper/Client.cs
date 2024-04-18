@@ -8,20 +8,20 @@ namespace WK.OpenAiWrapper;
 
 internal class Client : IOpenAiClient
 {
-    private readonly string _apiKey;
+    private readonly OpenAIClient _openAiClient;
     private readonly AssistantHandler _assistantHandler;
 
-    public Client(AssistantHandler assistantHandler, string apiKey)
+    public Client(AssistantHandler assistantHandler, OpenAIClient openAiClient)
     {
         _assistantHandler = assistantHandler;
-        _apiKey = apiKey;
+        _openAiClient = openAiClient;
     }
 
-    public OpenAIClient NewOpenAiClient() => new(_apiKey);
 
-    public async Task<Result.Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null)
+    public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId,
+        string? pilot = null)
     {
-        using OpenAIClient apiClient = new(_apiKey);
+        using OpenAIClient apiClient = _openAiClient;
 
         var threadResponse = await apiClient.ThreadsEndpoint.RetrieveThreadAsync(threadId);
         var user = threadResponse.Metadata.GetValueOrDefault("User");
@@ -46,13 +46,11 @@ internal class Client : IOpenAiClient
 
     public async Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user)
     {
-        using OpenAIClient apiClient = new(_apiKey);
-
-        var threadResponse = await apiClient.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
+        var threadResponse = await _openAiClient.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
             { new Message(text) }, UserHelper.GetDictionaryWithUser(user)));
-        var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, apiClient);
+        var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, _openAiClient);
 
-        return await CreateAndSendMessage(threadResponse.Id, apiClient, assistantId);
+        return await CreateAndSendMessage(threadResponse.Id, _openAiClient, assistantId);
     }
 
     private async Task<Result<OpenAiResponse>> CreateAndSendMessage(string threadId, OpenAIClient apiClient,

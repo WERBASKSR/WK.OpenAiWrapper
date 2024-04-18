@@ -47,7 +47,7 @@ internal class AssistantHandler(IServiceProvider serviceProvider)
 
     public async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId)
     {
-        using var client = serviceProvider.GetRequiredService<IOpenAiClient>().NewOpenAiClient();
+        using var client = serviceProvider.GetRequiredService<OpenAIClient>();
         return await GetAssistantResponseAsync(assistantId, client);
     }
 
