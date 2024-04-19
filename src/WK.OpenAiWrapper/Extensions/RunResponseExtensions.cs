@@ -8,26 +8,26 @@ internal static class RunResponseExtensions
     internal static async Task<RunResponse> WaitForDone(this Task<RunResponse> runResponseTask,
         AssistantHandler assistantHandler)
     {
-        var runResponse = await runResponseTask;
-        return await WaitForDone(runResponse, assistantHandler);
+        var runResponse = await runResponseTask.ConfigureAwait(false);
+        return await WaitForDone(runResponse, assistantHandler).ConfigureAwait(false);
     }
 
     internal static async Task<RunResponse> WaitForDone(this RunResponse runResponse, AssistantHandler assistantHandler)
     {
-        runResponse = await runResponse.WaitForStatusChangeAsync();
+        runResponse = await runResponse.WaitForStatusChangeAsync().ConfigureAwait(false);
         switch (runResponse.Status)
         {
             case RunStatus.RequiresAction:
-                var assistantResponse = await assistantHandler.GetAssistantResponseAsync(runResponse.AssistantId);
+                var assistantResponse = await assistantHandler.GetAssistantResponseAsync(runResponse.AssistantId).ConfigureAwait(false);
                 IReadOnlyList<ToolOutput> outputs =
-                    await assistantResponse.GetToolOutputsAsync(runResponse.RequiredAction.SubmitToolOutputs.ToolCalls);
-                runResponse = await runResponse.SubmitToolOutputsAsync(outputs);
-                runResponse = await runResponse.WaitForDone(assistantHandler);
+                    await assistantResponse.GetToolOutputsAsync(runResponse.RequiredAction.SubmitToolOutputs.ToolCalls).ConfigureAwait(false);
+                runResponse = await runResponse.SubmitToolOutputsAsync(outputs).ConfigureAwait(false);
+                runResponse = await runResponse.WaitForDone(assistantHandler).ConfigureAwait(false);
                 break;
             case RunStatus.InProgress:
             case RunStatus.Queued:
             case RunStatus.Cancelling:
-                runResponse = await runResponse.WaitForDone(assistantHandler);
+                runResponse = await runResponse.WaitForDone(assistantHandler).ConfigureAwait(false);
                 break;
             case RunStatus.Cancelled:
             case RunStatus.Failed:
