@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <Compile Remove="Result.Void.cs" />
+        <Compile Remove="Result\Result.Void.cs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -29,7 +30,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\WK.OpenAiWrapper.Result\WK.OpenAiWrapper.Result.csproj" />
+      <None Include="Result\Result.Void.cs" />
     </ItemGroup>
 
 </Project>
