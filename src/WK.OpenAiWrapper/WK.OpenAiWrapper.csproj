@@ -8,10 +8,19 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <RepositoryUrl>https://dev.azure.com/WERBAS/Innovation%20Area/_git/OpenAiWrapper</RepositoryUrl>
+        <RepositoryUrl>https://github.com/WERBASKSR/WK.OpenAiWrapper</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <IsPackable>true</IsPackable>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Title>WK.OpenAiWrapper</Title>
+        <PackageId>WK.OpenAiWrapper</PackageId>
+        <Version>1.1.0</Version>
+        <AssemblyVersion>1.1.0.0</AssemblyVersion>
+        <Authors>
+        chr0mcom,
+        lukasschachner
+        </Authors>
     </PropertyGroup>
 
     <ItemGroup>
