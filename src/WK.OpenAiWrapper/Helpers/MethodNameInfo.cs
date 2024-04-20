@@ -1,5 +1,4 @@
 ﻿using MoreLinq;
-using OpenAI;
 using System.Reflection;
 
 namespace WK.OpenAiWrapper.Helpers;
@@ -19,7 +18,7 @@ internal class MethodNameInfo
         methodFullNameParts.Remove(ClassName);
         NameSpaceName = string.Join('.', methodFullNameParts);
     }
-
+    
     public string MethodName { get; set; }
     public string ClassName { get; set; }
     public string NameSpaceName { get; set; }
@@ -28,9 +27,6 @@ internal class MethodNameInfo
     public MethodInfo GetMethodInfo()
     {
         Type type = GetClassType();
-        
-        
-        
         MethodInfo? methodInfo = type.GetMethods(BindingFlags.Public
                                                             | BindingFlags.NonPublic
                                                             | BindingFlags.Instance
@@ -41,8 +37,6 @@ internal class MethodNameInfo
                                             .Where(m => m.Name == MethodName)
                                             .OrderBy(m => m.GetParameters().Length)
                                             .FirstOrDefault();
-
-
         
         return methodInfo ?? throw new MissingMethodException($"The method {MethodName} was not found in the class {ClassName}.");
     }

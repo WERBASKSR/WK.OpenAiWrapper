@@ -1,15 +1,16 @@
 ﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Assistants;
 using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Options;
 
 namespace WK.OpenAiWrapper;
 
-internal class AssistantHandler(IServiceProvider serviceProvider)
+internal class AssistantHandler(IOptions<OpenAiOptions> options)
 {
-    private readonly Dictionary<string, string?> _assistantIds = new();
+    private readonly ThreadingDictionary<string, string?> _assistantIds = new();
     private readonly ConcurrentBag<Assistant> _assistants = new();
 
     public CreateAssistantRequest GetCreateAssistantRequest(string user, string pilotName)
@@ -17,7 +18,8 @@ internal class AssistantHandler(IServiceProvider serviceProvider)
         var assistant = _assistants.SingleOrDefault(a => a == (user, pilotName));
         if (assistant != null) return assistant.CreateAssistantRequest;
 
-        var pilot = serviceProvider.GetKeyedService<Pilot>(pilotName) ??
+        
+        var pilot = options.Value.Pilots?.SingleOrDefault(p => p.Name == pilotName) ??
                     throw new NotImplementedException($"{pilotName} is not registered in ServiceCollection");
         assistant = new Assistant(user, pilot);
         _assistants.Add(assistant);
@@ -27,33 +29,22 @@ internal class AssistantHandler(IServiceProvider serviceProvider)
 
     public async Task<string> GetOrCreateAssistantId(string user, string pilotName, OpenAIClient apiClient)
     {
-        return _assistantIds[UserHelper.GetPilotUserKey(pilotName, user)] ??
-               (await GetOrCreateAssistantResponse(user, pilotName, apiClient)).Id;
+        return _assistantIds.GetValue(UserHelper.GetPilotUserKey(pilotName, user)) ??
+               (await GetOrCreateAssistantResponse(user, pilotName, apiClient).ConfigureAwait(false)).Id;
     }
 
     public async Task<AssistantResponse> GetOrCreateAssistantResponse(string user, string pilotName,
         OpenAIClient apiClient)
     {
         var pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
-        var assistantId = _assistantIds[pilotUserKey];
-        if (assistantId != null) return await apiClient.AssistantsEndpoint.RetrieveAssistantAsync(assistantId);
+        var assistantId = _assistantIds.GetValue(pilotUserKey);
+        if (assistantId != null) return await apiClient.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
 
-        ListResponse<AssistantResponse> assistantsResponse = await apiClient.AssistantsEndpoint.ListAssistantsAsync();
+        ListResponse<AssistantResponse> assistantsResponse = await apiClient.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
         var assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == pilotUserKey)
                                 ?? await apiClient.AssistantsEndpoint.CreateAssistantAsync(
-                                    GetCreateAssistantRequest(user, pilotName));
+                                    GetCreateAssistantRequest(user, pilotName)).ConfigureAwait(false);
         _assistantIds.Add(pilotUserKey, assistantResponse.Id);
         return assistantResponse;
-    }
-
-    public async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId)
-    {
-        using var client = serviceProvider.GetRequiredService<OpenAIClient>();
-        return await GetAssistantResponseAsync(assistantId, client);
-    }
-
-    private static async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId, OpenAIClient apiClient)
-    {
-        return await apiClient.AssistantsEndpoint.RetrieveAssistantAsync(assistantId);
     }
 }

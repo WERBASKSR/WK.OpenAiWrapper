@@ -1,11 +1,8 @@
-﻿using System.Reflection;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using MoreLinq;
-using OpenAI;
 using WK.OpenAiWrapper.Extensions;
-using WK.OpenAiWrapper.Helpers;
+using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Models;
 using Xunit;
 
@@ -14,17 +11,60 @@ namespace WK.OpenAiWrapper.UnitTests;
 public class ClientTests
 {
     [Fact]
-    public void GetAssistantHandler()
+    public void ServiceCollectionExtensions_RegisterOpenAi_IOpenAiClientIsRegistered()
     {
+        //Arrange
         var config = new ConfigurationBuilder().Add(new MemoryConfigurationSource()
         {
             InitialData = new[] { new KeyValuePair<string, string>("OpenApi:ApiKey", "test") }
         }).Build();
-
-
         var serviceCollection = new ServiceCollection();
+        
+        //Act
         serviceCollection.RegisterOpenAi(config);
+        
+        //Assert
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
-        var assistantHandler = buildServiceProvider.GetService<AssistantHandler>();
+        var client = buildServiceProvider.GetService<IOpenAiClient>();
+        
+        Assert.NotNull(client);
+    }
+    
+    [Fact]
+    public async Task IOpenAiClient_GetOpenAiResponseWithNewThread_AiResponseAnAnswer()
+    {
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.RegisterOpenAi("apikey", 
+            new Pilot("pilot1", "Be helpful.", "gpt-3.5-turbo-0125"));
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        var client = buildServiceProvider.GetService<IOpenAiClient>();
+
+        var text = "Hello, what is 42?";
+        var pilot = "pilot1";
+        var user = "user1";
+
+        var result = await client.GetOpenAiResponseWithNewThread(text, pilot, user);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value.Answer);
+        Assert.NotEmpty(result.Value.ThreadId);
+    }
+    
+    [Fact]
+    public async Task IOpenAiClient_GetOpenAiResponse_AiResponseAnAnswer()
+    {
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.RegisterOpenAi("apikey");
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        var client = buildServiceProvider.GetService<IOpenAiClient>();
+
+        var text = "Tell me more about 42.";
+        var threadId = "threadId";
+
+        var result = await client.GetOpenAiResponse(text, threadId);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value.Answer);
+        Assert.NotEmpty(result.Value.ThreadId);
     }
 }
