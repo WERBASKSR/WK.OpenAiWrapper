@@ -43,6 +43,8 @@ jobs:
         run: dotnet restore src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj
       - name: Build
         run: dotnet build src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj -c Release -p:Version='${{ steps.gitversion.outputs.SemVer }}'
+      - name: Test
+        run: dotnet test test/WK.OpenAiWrapper.Tests/WK.OpenAiWrapper.Tests.csproj --no-build --verbosity normal
       - name: Upload NuGet package to GitHub
         uses: actions/upload-artifact@v2
         with:
@@ -67,10 +69,10 @@ jobs:
 
       - name: Prep packages
         run: dotnet nuget add source --username ${{ github.repository_owner }} --password ${{ secrets.GITHUBTOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-      - name: Push package to GitHub packages
-        run: dotnet nuget push *.nupkg --api-key ${{ secrets.GITHUBTOKEN }}  --source "github"
       - name: Push package to Nuget.org
-        run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGETTOKEN }} --source "https://api.nuget.org/v3/index.json"
+        run: dotnet nuget push /home/runner/work/WK.OpenAiWrapper/WK.OpenAiWrapper/*.nupkg --api-key ${{ secrets.NUGETTOKEN }} --source "https://api.nuget.org/v3/index.json"
+      - name: Push package to GitHub packages
+        run: dotnet nuget push /home/runner/work/WK.OpenAiWrapper/WK.OpenAiWrapper/*.nupkg --api-key ${{ secrets.GITHUBTOKEN }}  --source "github"
 
       #Create release
       - name: Create Release
