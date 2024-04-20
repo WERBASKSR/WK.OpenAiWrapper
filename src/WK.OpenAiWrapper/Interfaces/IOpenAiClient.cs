@@ -1,7 +1,7 @@
 ﻿using WK.OpenAiWrapper.Result;
-using OpenAI;
+using WK.OpenAiWrapper.Models;
 
-namespace WK.OpenAiWrapper;
+namespace WK.OpenAiWrapper.Interfaces;
 
 public interface IOpenAiClient
 {

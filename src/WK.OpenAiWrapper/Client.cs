@@ -2,7 +2,9 @@
 using OpenAI.Threads;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Result;
-using WK.OpenAiWrapper.Helper;
+using WK.OpenAiWrapper.Helpers;
+using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Interfaces;
 
 namespace WK.OpenAiWrapper;
 
@@ -16,7 +18,6 @@ internal class Client : IOpenAiClient
         _assistantHandler = assistantHandler;
         _openAiClient = openAiClient;
     }
-
 
     public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId,
         string? pilot = null)

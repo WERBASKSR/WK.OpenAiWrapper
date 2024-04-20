@@ -1,7 +1,8 @@
 ﻿using OpenAI.Assistants;
-using WK.OpenAiWrapper.Helper;
+using WK.OpenAiWrapper.Constants;
+using WK.OpenAiWrapper.Helpers;
 
-namespace WK.OpenAiWrapper;
+namespace WK.OpenAiWrapper.Models;
 
 internal record Assistant(string User, Pilot Pilot) : IEquatable<(string user, string pilot)>
 {

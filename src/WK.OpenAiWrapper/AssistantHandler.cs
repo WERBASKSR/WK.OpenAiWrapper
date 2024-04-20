@@ -2,7 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using OpenAI;
 using OpenAI.Assistants;
-using WK.OpenAiWrapper.Helper;
+using WK.OpenAiWrapper.Helpers;
+using WK.OpenAiWrapper.Models;
 
 namespace WK.OpenAiWrapper;
 

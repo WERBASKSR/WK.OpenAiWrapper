@@ -1,7 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using MoreLinq;
+using OpenAI;
 using WK.OpenAiWrapper.Extensions;
+using WK.OpenAiWrapper.Helpers;
+using WK.OpenAiWrapper.Models;
 using Xunit;
 
 namespace WK.OpenAiWrapper.UnitTests;
