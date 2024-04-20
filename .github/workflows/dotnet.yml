@@ -71,10 +71,10 @@ jobs:
       - name: List files in the repository
         run: ls ${{ github.workspace }}
         
-      - name: Push package to Nuget.org
-        run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGETTOKEN }} --source "https://api.nuget.org/v3/index.json"
       - name: Push package to GitHub packages
         run: dotnet nuget push *.nupkg --api-key ${{ secrets.GITHUBTOKEN }}  --source "github"
+      - name: Push package to Nuget.org
+        run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGETTOKEN1 }} --source "https://api.nuget.org/v3/index.json"
 
       #Create release
       - name: Create Release
