@@ -66,13 +66,13 @@ jobs:
           name: nugetPackage
 
       - name: Prep packages
-        run: dotnet nuget add source --username ${{ github.repository_owner }} --password ${{ secrets.GITHUBTOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+        run: dotnet nuget add source --username ${{ github.repository_owner }} --password ${{ secrets.GITHUBTOKEN1 }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
       
       - name: List files in the repository
         run: ls ${{ github.workspace }}
         
       - name: Push package to GitHub packages
-        run: dotnet nuget push *.nupkg --api-key ${{ secrets.GITHUBTOKEN }}  --source "github"
+        run: dotnet nuget push *.nupkg --api-key ${{ secrets.GITHUBTOKEN1 }}  --source "github"
       - name: Push package to Nuget.org
         run: dotnet nuget push *.nupkg --api-key ${{ secrets.NUGETTOKEN1 }} --source "https://api.nuget.org/v3/index.json"
 
@@ -84,4 +84,4 @@ jobs:
           tag: ${{ needs.build.outputs.Version }}
           name: Release ${{ needs.build.outputs.Version }}
           artifacts: "nugetPackage/*"
-          token: ${{ secrets.GITHUBTOKEN }}
+          token: ${{ secrets.GITHUBTOKEN1 }}
