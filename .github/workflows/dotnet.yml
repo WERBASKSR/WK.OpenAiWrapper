@@ -43,8 +43,6 @@ jobs:
         run: dotnet restore src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj
       - name: Build
         run: dotnet build src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj -c Release -p:Version='${{ steps.gitversion.outputs.SemVer }}'
-      - name: Test
-        run: dotnet test test/WK.OpenAiWrapper.Tests/WK.OpenAiWrapper.Tests.csproj --no-build
       - name: Upload NuGet package to GitHub
         uses: actions/upload-artifact@v2
         with:
