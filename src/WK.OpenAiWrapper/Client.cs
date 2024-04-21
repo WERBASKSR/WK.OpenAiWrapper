@@ -8,6 +8,7 @@ using WK.OpenAiWrapper.Interfaces;
 using Microsoft.Extensions.Options;
 using WK.OpenAiWrapper.Options;
 using OpenAI.Assistants;
+using OpenAI.Audio;
 using OpenAI.Images;
 using OpenAI.Models;
 
@@ -32,6 +33,12 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
         return await GetImage(text, client).ConfigureAwait(false);
+    }
+
+    public async Task<Result<OpenAiAudioResponse>> GetOpenAiAudioResponse(string audioFilePath)
+    {
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        return await GetTranscription(audioFilePath, client).ConfigureAwait(false);
     }
 
     public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null)
@@ -103,6 +110,21 @@ internal class Client : IOpenAiClient
         {
             Console.WriteLine(exception);
             return Result<OpenAiImageResponse>.Error($"Generate Image failed: {exception.Message}");
+        }
+    }
+
+    private async Task<Result<OpenAiAudioResponse>> GetTranscription(string audioFilePath, OpenAIClient client)
+    {
+        try
+        {
+            AudioResponse audioResponse = await client.AudioEndpoint.CreateTranscriptionJsonAsync(new AudioTranscriptionRequest(audioFilePath)).ConfigureAwait(false);
+            if (audioResponse == null) throw new ArgumentNullException($"AudioResponse was null");
+            return new OpenAiAudioResponse(audioResponse.Text);
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine(exception);
+            return Result<OpenAiAudioResponse>.Error($"Generate Transcription failed: {exception.Message}");
         }
     }
 }

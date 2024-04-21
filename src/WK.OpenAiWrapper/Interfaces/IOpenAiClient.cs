@@ -49,4 +49,16 @@ public interface IOpenAiClient
     ///     If `text` is empty or null.
     /// </exception>
     Task<Result<OpenAiImageResponse>> GetOpenAiImageResponse(string text);
+
+    /// <summary>
+    ///     Gets an OpenAI audio response.
+    /// </summary>
+    /// <param name="audioFilePath">The audio filepath to send to the OpenAI service.</param>
+    /// <returns>
+    ///     An `OpenAiAudioResponse` object containing the audio response from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///     If `audio` is null.
+    /// </exception>
+    Task<Result<OpenAiAudioResponse>> GetOpenAiAudioResponse(string audioFilePath);
 }

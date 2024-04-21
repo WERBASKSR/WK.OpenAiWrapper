@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
+using NAudio.Wave;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Models;
@@ -22,10 +23,10 @@ public class ClientTests
         
         //Act
         serviceCollection.RegisterOpenAi(config);
-        
-        //Assert
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
         var client = buildServiceProvider.GetService<IOpenAiClient>();
+        
+        //Assert
         
         Assert.NotNull(client);
     }
@@ -33,18 +34,17 @@ public class ClientTests
     [Fact]
     public async Task IOpenAiClient_GetOpenAiResponseWithNewThread_AiResponseAnAnswer()
     {
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.RegisterOpenAi("apikey", 
-            new Pilot("pilot1", "Be helpful.", "gpt-3.5-turbo-0125"));
-        var buildServiceProvider = serviceCollection.BuildServiceProvider();
-        var client = buildServiceProvider.GetService<IOpenAiClient>();
+        //Arrange
+        IOpenAiClient? client = ArrangeOpenAiClient();
 
         var text = "Hello, what is 42?";
         var pilot = "pilot1";
         var user = "user1";
-
+        
+        //Act
         var result = await client.GetOpenAiResponseWithNewThread(text, pilot, user);
-
+        
+        //Assert
         Assert.True(result.IsSuccess);
         Assert.NotEmpty(result.Value.Answer);
         Assert.NotEmpty(result.Value.ThreadId);
@@ -53,16 +53,16 @@ public class ClientTests
     [Fact]
     public async Task IOpenAiClient_GetOpenAiResponse_AiResponseAnAnswer()
     {
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.RegisterOpenAi("apikey");
-        var buildServiceProvider = serviceCollection.BuildServiceProvider();
-        var client = buildServiceProvider.GetService<IOpenAiClient>();
+        //Arrange
+        IOpenAiClient? client = ArrangeOpenAiClient();
 
         var text = "Tell me more about 42.";
         var threadId = "threadId";
-
+        
+        //Act
         var result = await client.GetOpenAiResponse(text, threadId);
-
+        
+        //Assert
         Assert.True(result.IsSuccess);
         Assert.NotEmpty(result.Value.Answer);
         Assert.NotEmpty(result.Value.ThreadId);
@@ -71,16 +71,41 @@ public class ClientTests
     [Fact]
     public async Task IOpenAiClient_GetOpenAiImageResponse_AiImageInResponse()
     {
+        //Arrange
+        IOpenAiClient? client = ArrangeOpenAiClient();
+
+        var text = "A dog on the moon in an astronaut suit.";
+        
+        //Act
+        var result = await client.GetOpenAiImageResponse(text);
+        
+        //Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value.Url);
+    }
+    
+    [Fact]
+    public async Task IOpenAiClient_GetOpenAiAudioResponse_TranscriptionInResponse()
+    {
+        //Arrange
+        IOpenAiClient? client = ArrangeOpenAiClient();
+        string mp3FilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ElevenLabs_2024-04-21.mp3");
+        if (!File.Exists(mp3FilePath)) throw new FileNotFoundException(mp3FilePath);
+        
+        //Act
+        var result = await client.GetOpenAiAudioResponse(mp3FilePath);
+        
+        //Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value.Text);
+    }
+
+    private static IOpenAiClient? ArrangeOpenAiClient()
+    {
         var serviceCollection = new ServiceCollection();
         serviceCollection.RegisterOpenAi("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");
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
         var client = buildServiceProvider.GetService<IOpenAiClient>();
-
-        var text = "A dog on the moon in an astronaut suit.";
-
-        var result = await client.GetOpenAiImageResponse(text);
-
-        Assert.True(result.IsSuccess);
-        Assert.NotEmpty(result.Value.Url);
+        return client;
     }
 }
