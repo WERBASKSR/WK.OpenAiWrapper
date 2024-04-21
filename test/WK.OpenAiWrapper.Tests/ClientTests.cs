@@ -67,4 +67,20 @@ public class ClientTests
         Assert.NotEmpty(result.Value.Answer);
         Assert.NotEmpty(result.Value.ThreadId);
     }
+    
+    [Fact]
+    public async Task IOpenAiClient_GetOpenAiImageResponse_AiImageInResponse()
+    {
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.RegisterOpenAi("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");
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        var client = buildServiceProvider.GetService<IOpenAiClient>();
+
+        var text = "A dog on the moon in an astronaut suit.";
+
+        var result = await client.GetOpenAiImageResponse(text);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value.Url);
+    }
 }

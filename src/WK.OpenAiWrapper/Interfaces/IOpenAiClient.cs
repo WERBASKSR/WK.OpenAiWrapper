@@ -37,4 +37,16 @@ public interface IOpenAiClient
     ///     If `text`, `pilot`, or `user` is empty or null.
     /// </exception>
     Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user);
+
+    /// <summary>
+    ///     Gets an OpenAI image response.
+    /// </summary>
+    /// <param name="text">The text to send to the OpenAI service.</param>
+    /// <returns>
+    ///     An `OpenAiImageResponse` object containing the image response from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///     If `text` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiImageResponse>> GetOpenAiImageResponse(string text);
 }
