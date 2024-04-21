@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using NAudio.Wave;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Interfaces;
-using WK.OpenAiWrapper.Models;
 using Xunit;
 
 namespace WK.OpenAiWrapper.UnitTests;
@@ -99,11 +97,48 @@ public class ClientTests
         Assert.True(result.IsSuccess);
         Assert.NotEmpty(result.Value.Text);
     }
+    
+    [Fact]
+    public async Task IOpenAiClient_GetOpenAiSpeechResponse_SpeechInResponse()
+    {
+        //Arrange
+        IOpenAiClient? client = ArrangeOpenAiClient();
+        string mp3FilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "speech.mp3");
+        
+        var text = "Ein Hund auf dem Mond in einem Astronautenanzug.";
+        
+        //Act
+        var result = await client.GetOpenAiSpeechResponse(text);
+
+        //Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value.AudioFileBytes);
+        
+        //Manual Check
+        File.WriteAllBytes(mp3FilePath, result.Value.AudioFileBytes);
+    }
+    
+    [Fact]
+    public async Task IOpenAiClient_GetOpenAiVisionResponse_VisionAnswerInResponse()
+    {
+        //Arrange
+        IOpenAiClient? client = ArrangeOpenAiClient();
+        
+        //Act
+        var result = await client.GetOpenAiVisionResponse(
+            "What can you see in the picture?",
+            "https://werbas.com/wp-content/uploads/2021/07/Dennis_Koblowsky-Buspreis-454x400.jpg"
+            );
+
+        //Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value.Answer);
+    }
 
     private static IOpenAiClient? ArrangeOpenAiClient()
     {
         var serviceCollection = new ServiceCollection();
-        serviceCollection.RegisterOpenAi("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");
+        serviceCollection.RegisterOpenAi("apikey");
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
         var client = buildServiceProvider.GetService<IOpenAiClient>();
         return client;

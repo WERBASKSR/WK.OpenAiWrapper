@@ -11,6 +11,7 @@ using OpenAI.Assistants;
 using OpenAI.Audio;
 using OpenAI.Images;
 using OpenAI.Models;
+using OpenAI.Chat;
 
 namespace WK.OpenAiWrapper;
 
@@ -39,6 +40,18 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
         return await GetTranscription(audioFilePath, client).ConfigureAwait(false);
+    }
+
+    public async Task<Result<OpenAiSpeechResponse>> GetOpenAiSpeechResponse(string text)
+    {
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        return await GetSpeech(text, client).ConfigureAwait(false);
+    }
+
+    public async Task<Result<OpenAiResponse>> GetOpenAiVisionResponse(string text, string url)
+    {
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        return await GetVision(text, url, client).ConfigureAwait(false);
     }
 
     public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null)
@@ -70,18 +83,18 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
         var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-            { new Message(text) }, UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
+            { new OpenAI.Threads.Message(text) }, UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
         var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, client).ConfigureAwait(false);
 
         return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
     }
-    
+
     internal async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId)
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
         return await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
     }
-
+    
     private async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
     {
         var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId))
@@ -124,7 +137,45 @@ internal class Client : IOpenAiClient
         catch (Exception exception)
         {
             Console.WriteLine(exception);
-            return Result<OpenAiAudioResponse>.Error($"Generate Transcription failed: {exception.Message}");
+            return Result<OpenAiAudioResponse>.Error($"Get Transcription failed: {exception.Message}");
+        }
+    }
+
+    private async Task<Result<OpenAiSpeechResponse>> GetSpeech(string text, OpenAIClient client)
+    {
+        try
+        {
+            ReadOnlyMemory<byte> speechBytes = await client.AudioEndpoint.CreateSpeechAsync(new SpeechRequest(text)).ConfigureAwait(false);
+            if (speechBytes.IsEmpty) throw new ArgumentNullException($"SpeechResponse was null");
+            return new OpenAiSpeechResponse(speechBytes.ToArray());
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine(exception);
+            return Result<OpenAiSpeechResponse>.Error($"Get Speech failed: {exception.Message}");
+        }
+    }
+
+    private async Task<Result<OpenAiResponse>> GetVision(string text, string url, OpenAIClient client)
+    {
+        try
+        {
+            OpenAI.Chat.Message message = new (Role.User, new List<OpenAI.Chat.Content>
+            {
+                text,
+                new ImageUrl(url, ImageDetail.Low)
+            });
+            var chatRequest = new ChatRequest(new []{ message }, model: Model.GPT4_Turbo);
+            var response = await client.ChatEndpoint.GetCompletionAsync(chatRequest);
+            var answer = response.FirstChoice.Message;
+            if (answer == null) return Result<OpenAiResponse>.Error("No answer was returned from the OpenAI API.");
+
+            return new OpenAiResponse(answer, "VisionCall");
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine(exception);
+            return Result<OpenAiResponse>.Error($"Get Vision Response failed: {exception.Message}");
         }
     }
 }

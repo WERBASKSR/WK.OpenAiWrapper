@@ -61,4 +61,29 @@ public interface IOpenAiClient
     ///     If `audio` is null.
     /// </exception>
     Task<Result<OpenAiAudioResponse>> GetOpenAiAudioResponse(string audioFilePath);
+    
+    /// <summary>
+    ///     Gets an OpenAI speech response.
+    /// </summary>
+    /// <param name="text">The text to send to the OpenAI service.</param>
+    /// <returns>
+    ///     An `OpenAiSpeechResponse` object containing the speech response from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///     If `text` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiSpeechResponse>> GetOpenAiSpeechResponse(string text);
+    
+    /// <summary>
+    ///     Gets an OpenAI vision response.
+    /// </summary>
+    /// <param name="text">The text to send to the OpenAI service.</param>
+    /// <param name="url">The URL of the image to be analyzed by the OpenAI service.</param>
+    /// <returns>
+    ///     An `OpenAiResponse` object containing the vision response from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///     If `text` or `url` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiResponse>> GetOpenAiVisionResponse(string text, string url);
 }
