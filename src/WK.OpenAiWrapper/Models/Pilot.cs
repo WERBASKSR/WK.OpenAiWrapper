@@ -9,7 +9,7 @@ public record Pilot(string Name, string Instructions, string Model = "gpt-4-turb
     // ReSharper disable once CollectionNeverUpdated.Global
     // ReSharper disable once ReturnTypeCanBeEnumerable.Global
     public ICollection<Tool> Tools { get; } = new HashSet<Tool>();
-    public ICollection<ToolBuilder> ToolBuilders { get; } = new HashSet<ToolBuilder>();
+    public ICollection<ToolFunction> ToolBuilders { get; } = new HashSet<ToolFunction>();
 
     internal void TransferToolBuildersToTools() => ToolBuilders.ForEach(t => Tools.Add(t.GenerateTool()));
 }

@@ -57,7 +57,7 @@ internal class Client : IOpenAiClient
     public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null)
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
-
+        
         var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId).ConfigureAwait(false);
         var user = threadResponse.Metadata.GetValueOrDefault("User");
         if (user == null) Result<OpenAiResponse>.Error("Field 'User' is missing in Metadata.");

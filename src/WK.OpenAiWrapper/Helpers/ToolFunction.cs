@@ -3,7 +3,7 @@ using OpenAI;
 
 namespace WK.OpenAiWrapper.Helpers;
 
-public record ToolBuilder(string MethodFullName, string Description)
+public record ToolFunction(string MethodFullName, string Description)
 {
     public Tool GenerateTool()
     {

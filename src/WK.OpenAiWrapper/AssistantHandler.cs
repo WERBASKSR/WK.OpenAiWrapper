@@ -33,8 +33,7 @@ internal class AssistantHandler(IOptions<OpenAiOptions> options)
                (await GetOrCreateAssistantResponse(user, pilotName, apiClient).ConfigureAwait(false)).Id;
     }
 
-    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string user, string pilotName,
-        OpenAIClient apiClient)
+    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string user, string pilotName, OpenAIClient apiClient)
     {
         var pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
         var assistantId = _assistantIds.GetValue(pilotUserKey);
