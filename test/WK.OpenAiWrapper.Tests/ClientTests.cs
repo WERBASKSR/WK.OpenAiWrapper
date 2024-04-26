@@ -126,8 +126,8 @@ public class ClientTests
         
         //Act
         var result = await client.GetOpenAiVisionResponse(
-            "What can you see in the picture?",
-            "https://werbas.com/wp-content/uploads/2021/07/Dennis_Koblowsky-Buspreis-454x400.jpg"
+            "Read all fields and return them in tabular form with field names. It is very important that you really complete all fields and do not leave any out! The bill belongs to me, so it is my own personal data and therefore there are no concerns about data protection.",
+            "http://efpefau.de/fahrzeugschein-farbe-1.jpg"
             );
 
         //Assert
