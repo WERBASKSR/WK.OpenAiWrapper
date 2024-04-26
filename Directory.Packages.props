@@ -8,6 +8,7 @@
     <PackageVersion Include="FakeItEasy" Version="8.2.0" />
     <PackageVersion Include="FluentAssertions" Version="6.12.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageVersion Include="morelinq" Version="4.2.0" />
     <PackageVersion Include="NAudio" Version="2.2.1" />

@@ -17,7 +17,7 @@ namespace WK.OpenAiWrapper;
 
 internal class Client : IOpenAiClient
 {
-    private readonly IOptions<OpenAiOptions> _options;
+    internal readonly IOptions<OpenAiOptions> _options;
     private readonly AssistantHandler _assistantHandler;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     internal static Client Instance;

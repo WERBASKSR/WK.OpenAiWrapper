@@ -16,22 +16,26 @@ public static class ServiceCollectionExtensions
         serviceCollection.Configure<OpenAiOptions>(options =>
         {
             options.ApiKey = apiKey;
-            options.Pilots = pilots;
+            options.Pilots.AddRange(pilots);
         });
         
         TransferToolBuilders(pilots);
         ValidatePilots(pilots);
-        Register(serviceCollection);
+        RegisterOpenAiClient(serviceCollection);
         return serviceCollection;
     }
     
     public static IServiceCollection RegisterOpenAi(this IServiceCollection serviceCollection, IConfigurationRoot configuration, params Pilot[] pilots)
     {
-        serviceCollection.Configure<OpenAiOptions>(configuration.GetRequiredSection(OpenAiOptions.SectionName));
+        serviceCollection.Configure<OpenAiOptions>(configuration.GetRequiredSection(OpenAiOptions.SectionName))
+            .PostConfigure<OpenAiOptions>(options =>
+        {
+            options.Pilots.AddRange(pilots);
+        });
         
         TransferToolBuilders(pilots);
         ValidatePilots(pilots);
-        Register(serviceCollection);
+        RegisterOpenAiClient(serviceCollection);
         return serviceCollection;
     }
     
@@ -44,11 +48,9 @@ public static class ServiceCollectionExtensions
         if (pilotNames.Distinct().Count() != pilotNames.Count) throw new ArgumentException("Pilot names must be unique.");
     }
     
-    private static void Register(IServiceCollection serviceCollection)
+    private static void RegisterOpenAiClient(IServiceCollection serviceCollection)
     {
-        serviceCollection.AddScoped(p => new OpenAIClient(
-            new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
-        
+        serviceCollection.AddScoped(p => new OpenAIClient(new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
         serviceCollection.AddSingleton<IOpenAiClient, Client>();
     }
 }
