@@ -31,15 +31,15 @@ public static class ServiceCollectionExtensions
             .PostConfigure<OpenAiOptions>(options =>
         {
             options.Pilots.AddRange(pilots);
+            TransferToolBuilders(options.Pilots);
         });
         
-        TransferToolBuilders(pilots);
         ValidatePilots(pilots);
         RegisterOpenAiClient(serviceCollection);
         return serviceCollection;
     }
     
-    private static void TransferToolBuilders(Pilot[] pilots) => pilots.ForEach(p => p.TransferToolBuildersToTools());
+    private static void TransferToolBuilders(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.TransferToolBuildersToTools());
     
     private static void ValidatePilots(Pilot[] pilots)
     {

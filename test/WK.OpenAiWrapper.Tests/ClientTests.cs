@@ -7,7 +7,7 @@ using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Models;
 using Xunit;
 
-namespace WK.OpenAiWrapper.UnitTests;
+namespace WK.OpenAiWrapper.Tests;
 
 public class ClientTests
 {
@@ -57,6 +57,76 @@ public class ClientTests
         //Assert
         Assert.NotNull(client);
         Assert.True(client._options.Value.Pilots.Count == 2);
+    }
+    
+    [Fact]
+    public void ServiceCollectionExtensions_RegisterOpenAiWithToolFunctions_FunctionsAreInTools()
+    {
+        //Arrange
+        var json = @"{""OpenAi:ApiKey"": ""test"",
+                    ""OpenAi:Pilots"": [
+                        {
+                            ""Name"": ""Master"",
+                            ""Instructions"": ""You are a helpful assistant."",
+                            ""ToolFunctions"": [
+                              {
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.Communicator.GetWorkItemInformations"",
+                                ""Description"": ""Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.""
+                              }]
+                        }
+                    ]
+                }";
+        
+        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
+        var serviceCollection = new ServiceCollection();
+        
+        //Act
+        serviceCollection.RegisterOpenAi(config);
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        var client = buildServiceProvider.GetService<IOpenAiClient>() as Client;
+        
+        //Assert
+        Assert.NotNull(client);
+        Assert.True(client._options.Value.Pilots.Count == 1);
+        Assert.True(client._options.Value.Pilots[0].Tools.Count == 1);
+    }
+    
+    [Fact]
+    public async void IOpenAiClient_GetOpenAiResponseWithNewThreadAndWithFunctionCall_AiResponseAnAnswer()
+    {
+        //Arrange
+        var json = @"{""OpenAi:ApiKey"": ""apikey"",
+                    ""OpenAi:Pilots"": [
+                        {
+                            ""Name"": ""Master"",
+                            ""Instructions"": ""You are a helpful assistant."",
+                            ""ToolFunctions"": [
+                              {
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.Communicator.GetWorkItemInformations"",
+                                ""Description"": ""Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.""
+                              }]
+                        }
+                    ]
+                }";
+        
+        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
+        var serviceCollection = new ServiceCollection();
+        
+        var text = "Erstelle eine Zusammenfassung aus dem WorkItem 35879";
+        var pilot = "Master";
+        var user = $"Horst{new Random().Next(100)}";
+        
+        serviceCollection.RegisterOpenAi(config);
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        var client = buildServiceProvider.GetService<IOpenAiClient>() as Client;
+        
+        //Act
+        var result = await client.GetOpenAiResponseWithNewThread(text, pilot, user);
+        
+        //Assert
+        Assert.NotNull(client);
+        Assert.True(client._options.Value.Pilots.Count == 1);
+        Assert.True(client._options.Value.Pilots[0].Tools.Count == 1);
     }
     
     [Fact]
