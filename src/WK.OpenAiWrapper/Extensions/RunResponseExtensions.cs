@@ -5,8 +5,7 @@ namespace WK.OpenAiWrapper.Extensions;
 
 internal static class RunResponseExtensions
 {
-    internal static async Task<RunResponse> WaitForDone(this Task<RunResponse> runResponseTask,
-        AssistantHandler assistantHandler)
+    internal static async Task<RunResponse> WaitForDone(this Task<RunResponse> runResponseTask, AssistantHandler assistantHandler)
     {
         var runResponse = await runResponseTask.ConfigureAwait(false);
         return await WaitForDone(runResponse, assistantHandler).ConfigureAwait(false);
@@ -18,7 +17,7 @@ internal static class RunResponseExtensions
         switch (runResponse.Status)
         {
             case RunStatus.RequiresAction:
-                var assistantResponse = await assistantHandler.GetAssistantResponseAsync(runResponse.AssistantId).ConfigureAwait(false);
+                var assistantResponse = await Client.Instance.GetAssistantResponseAsync(runResponse.AssistantId).ConfigureAwait(false);
                 IReadOnlyList<ToolOutput> outputs =
                     await assistantResponse.GetToolOutputsAsync(runResponse.RequiredAction.SubmitToolOutputs.ToolCalls).ConfigureAwait(false);
                 runResponse = await runResponse.SubmitToolOutputsAsync(outputs).ConfigureAwait(false);

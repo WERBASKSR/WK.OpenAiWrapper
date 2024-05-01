@@ -16,38 +16,41 @@ public static class ServiceCollectionExtensions
         serviceCollection.Configure<OpenAiOptions>(options =>
         {
             options.ApiKey = apiKey;
-            options.Pilots = pilots;
+            options.Pilots.AddRange(pilots);
         });
         
-        ValidateAndRegister(serviceCollection, pilots);
+        TransferToolBuilders(pilots);
+        ValidatePilots(pilots);
+        RegisterOpenAiClient(serviceCollection);
         return serviceCollection;
     }
     
     public static IServiceCollection RegisterOpenAi(this IServiceCollection serviceCollection, IConfigurationRoot configuration, params Pilot[] pilots)
     {
-        serviceCollection.Configure<OpenAiOptions>(configuration.GetRequiredSection(OpenAiOptions.SectionName));
-
-        ValidateAndRegister(serviceCollection, pilots);
+        serviceCollection.Configure<OpenAiOptions>(configuration.GetRequiredSection(OpenAiOptions.SectionName))
+            .PostConfigure<OpenAiOptions>(options =>
+        {
+            options.Pilots.AddRange(pilots);
+            TransferToolBuilders(options.Pilots);
+        });
+        
+        ValidatePilots(pilots);
+        RegisterOpenAiClient(serviceCollection);
         return serviceCollection;
     }
-
-    private static void ValidateAndRegister(IServiceCollection serviceCollection, Pilot[] pilots)
+    
+    private static void TransferToolBuilders(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.TransferToolBuildersToTools());
+    
+    private static void ValidatePilots(Pilot[] pilots)
     {
-        serviceCollection.AddScoped(p => new OpenAIClient(
-            new OpenAIAuthentication(
-                p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
-        
-        serviceCollection.AddSingleton<IOpenAiClient, Client>(p => 
-            new Client(
-                p.GetRequiredService<AssistantHandler>(),
-                p.GetRequiredService<OpenAIClient>()));
-        
         //Check pilotNames are unique
         var pilotNames = pilots.Select(p => p.Name).ToList();
         if (pilotNames.Distinct().Count() != pilotNames.Count) throw new ArgumentException("Pilot names must be unique.");
-
-        pilots.ForEach(p => serviceCollection.AddKeyedSingleton(p.Name, p));
-
-        serviceCollection.AddSingleton<AssistantHandler>();
+    }
+    
+    private static void RegisterOpenAiClient(IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddScoped(p => new OpenAIClient(new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
+        serviceCollection.AddSingleton<IOpenAiClient, Client>();
     }
 }

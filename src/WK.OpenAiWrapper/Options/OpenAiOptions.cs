@@ -9,5 +9,5 @@ public class OpenAiOptions
     [Required(AllowEmptyStrings = false)]
     public string ApiKey { get; set; } = string.Empty;
 
-    public ICollection<Pilot>? Pilots;
+    public List<Pilot> Pilots { get; } = new ();
 }

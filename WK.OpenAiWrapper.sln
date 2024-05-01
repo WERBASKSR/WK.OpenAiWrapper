@@ -5,9 +5,7 @@ VisualStudioVersion = 17.7.34024.191
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WK.OpenAiWrapper", "src\WK.OpenAiWrapper\WK.OpenAiWrapper.csproj", "{C5778A03-A376-438E-A342-B595459CED19}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WK.OpenAiWrapper.Tests", "test\WK.OpenAiWrapper.Tests\WK.OpenAiWrapper.Tests.csproj", "{42485072-E85E-4F75-A63F-CAB393F02701}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WK.OpenAiWrapper.Result", "src\WK.OpenAiWrapper.Result\WK.OpenAiWrapper.Result.csproj", "{46414C5A-81DB-469A-AEFE-FA67ADE242A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WK.OpenAiWrapper.Tests", "test\WK.OpenAiWrapper.Tests\WK.OpenAiWrapper.Tests.csproj", "{42485072-E85E-4F75-A63F-CAB393F02701}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{83D50927-44D6-43C6-BA90-9BDE33B27C32}"
 EndProject
@@ -27,20 +25,15 @@ Global
 		{42485072-E85E-4F75-A63F-CAB393F02701}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42485072-E85E-4F75-A63F-CAB393F02701}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42485072-E85E-4F75-A63F-CAB393F02701}.Release|Any CPU.Build.0 = Release|Any CPU
-		{46414C5A-81DB-469A-AEFE-FA67ADE242A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{46414C5A-81DB-469A-AEFE-FA67ADE242A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{46414C5A-81DB-469A-AEFE-FA67ADE242A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{46414C5A-81DB-469A-AEFE-FA67ADE242A9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {A9DAB99A-318B-4F1C-9197-E3652790327C}
-	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C5778A03-A376-438E-A342-B595459CED19} = {83D50927-44D6-43C6-BA90-9BDE33B27C32}
-		{46414C5A-81DB-469A-AEFE-FA67ADE242A9} = {83D50927-44D6-43C6-BA90-9BDE33B27C32}
 		{42485072-E85E-4F75-A63F-CAB393F02701} = {65C24D9A-720F-4A56-AF0A-0273DEBFF634}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A9DAB99A-318B-4F1C-9197-E3652790327C}
 	EndGlobalSection
 EndGlobal
