@@ -4,7 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>OpenAiWrapper.UnitTests</RootNamespace>
+        <RootNamespace>OpenAiWrapper.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

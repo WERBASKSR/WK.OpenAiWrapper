@@ -6,17 +6,20 @@ using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Interfaces;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using WK.OpenAiWrapper.Options;
 using OpenAI.Assistants;
 using OpenAI.Audio;
 using OpenAI.Images;
 using OpenAI.Models;
 using OpenAI.Chat;
+using WK.OpenAiWrapper.Constants;
 
 namespace WK.OpenAiWrapper;
 
 internal class Client : IOpenAiClient
 {
+    private readonly string AssumptionAssistantId;
     internal readonly IOptions<OpenAiOptions> _options;
     private readonly AssistantHandler _assistantHandler;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -27,6 +30,20 @@ internal class Client : IOpenAiClient
     {
         _options = options;
         _assistantHandler = new(options);
+        string assumptionAssistantName = "AssumptionAssistant";
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        Task<ListResponse<AssistantResponse>> listAssistantsTask = client.AssistantsEndpoint.ListAssistantsAsync();
+        listAssistantsTask.Wait();
+        AssistantResponse? assistantResponse = listAssistantsTask.Result.Items.SingleOrDefault(a => a.Name == assumptionAssistantName);
+        if (assistantResponse == null)
+        {
+            Task<AssistantResponse> assistantResponseTask =
+                client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT3_5_Turbo,
+                    "AssumptionAssistant", "", Prompts.AiAssumptionPrompt));
+            assistantResponseTask.Wait();
+            assistantResponse = assistantResponseTask.Result;
+        }
+        AssumptionAssistantId = assistantResponse.Id;
         Instance = this;
     }
 
@@ -87,6 +104,23 @@ internal class Client : IOpenAiClient
         var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, client).ConfigureAwait(false);
 
         return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
+    }
+
+    public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeAppreciated)
+    {
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
+            { new OpenAI.Threads.Message($"Prompt: {textToBeAppreciated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(_assistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
+        Result<OpenAiResponse> result = await GetTextAnswer(threadResponse.Id, client, AssumptionAssistantId).ConfigureAwait(false);
+        if (!result.IsSuccess) return Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
+        try
+        {
+            return new OpenAiPilotAssumptionResponse(JsonConvert.DeserializeObject<PilotAssumptionContainer>(result.Value.Answer));
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiPilotAssumptionResponse>.Error(e.Message);
+        }
     }
 
     internal async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId)
