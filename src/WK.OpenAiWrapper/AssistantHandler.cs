@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Assistants;
+using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Options;
@@ -12,7 +13,9 @@ internal class AssistantHandler(IOptions<OpenAiOptions> options)
 {
     private readonly ThreadingDictionary<string, string?> _assistantIds = new();
     private readonly ConcurrentBag<Assistant> _assistants = new();
-
+    private readonly Lazy<HashSet<PilotDescription>> _pilotDescriptions = new(() => options.Value.Pilots.Select(p => p.ToPilotDescription()).ToHashSet());
+    public HashSet<PilotDescription> PilotDescriptions => _pilotDescriptions.Value;
+    
     public CreateAssistantRequest GetCreateAssistantRequest(string user, string pilotName)
     {
         var assistant = _assistants.SingleOrDefault(a => a == (user, pilotName));

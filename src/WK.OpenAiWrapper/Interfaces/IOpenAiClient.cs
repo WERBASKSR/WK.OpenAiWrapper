@@ -86,4 +86,6 @@ public interface IOpenAiClient
     ///     If `text` or `url` is empty or null.
     /// </exception>
     Task<Result<OpenAiResponse>> GetOpenAiVisionResponse(string text, string url);
+
+    Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeAppreciated);
 }

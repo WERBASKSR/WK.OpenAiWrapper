@@ -149,6 +149,50 @@ public class ClientTests
     }
     
     [Fact]
+    public async void IOpenAiClient_GetOpenAiPilotAssumptionResponse_WeatherPilotAssumptionAsJsonInAnswer()
+    {
+        //Arrange
+        var json = @"{""OpenAi:ApiKey"": ""apikey"",
+                    ""OpenAi:Pilots"": [
+                        {
+                            ""Name"": ""Master"",
+                            ""Instructions"": ""You are a helpful assistant."",
+                            ""ToolFunctions"": [
+                              {
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.Communicator.GetWorkItemInformations"",
+                                ""Description"": ""Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.""
+                              }]
+                        },
+                        {
+                            ""Name"": ""Weather"",
+                            ""Instructions"": ""You are a weather expert."",
+                            ""ToolFunctions"": [
+                              {
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.WeatherCalls.GetWeather"",
+                                ""Description"": ""Retrieves information about a weather in a location.""
+                              }]
+                        }
+                    ]
+                }";
+        
+        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
+        var serviceCollection = new ServiceCollection();
+        
+        serviceCollection.RegisterOpenAi(config);
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        var client = buildServiceProvider.GetService<IOpenAiClient>() as Client;
+        var text = "What is the weather like in Paris?";
+        
+        //Act
+        var result = await client.GetOpenAiPilotAssumptionResponse(text);
+        
+        //Assert
+        Assert.NotNull(result);
+        Assert.NotNull(result.Value.PilotAssumptionContainer.PilotAssumptions);
+        Assert.True(result.Value.PilotAssumptionContainer.PilotAssumptions.Count == 2);
+    }
+    
+    [Fact]
     public async Task IOpenAiClient_GetOpenAiResponse_AiResponseAnAnswer()
     {
         //Arrange
