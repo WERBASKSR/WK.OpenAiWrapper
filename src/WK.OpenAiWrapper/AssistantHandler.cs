@@ -13,10 +13,9 @@ internal class AssistantHandler(IOptions<OpenAiOptions> options)
 {
     private readonly ThreadingDictionary<string, string?> _assistantIds = new();
     private readonly ConcurrentBag<Assistant> _assistants = new();
-    private HashSet<PilotDescription>? _pilotDescriptions;
-
-    public HashSet<PilotDescription> PilotDescriptions => _pilotDescriptions ??= options.Value.Pilots.Select(p => p.ToPilotDescription()).ToHashSet();
-
+    private readonly Lazy<HashSet<PilotDescription>> _pilotDescriptions = new(() => options.Value.Pilots.Select(p => p.ToPilotDescription()).ToHashSet());
+    public HashSet<PilotDescription> PilotDescriptions => _pilotDescriptions.Value;
+    
     public CreateAssistantRequest GetCreateAssistantRequest(string user, string pilotName)
     {
         var assistant = _assistants.SingleOrDefault(a => a == (user, pilotName));
