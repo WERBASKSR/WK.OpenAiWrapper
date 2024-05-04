@@ -159,8 +159,7 @@ public class ClientTests
                             ""Instructions"": ""You are a helpful assistant."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.Communicator.GetWorkItemInformations"",
-                                ""Description"": ""Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.""
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.Communicator.GetWorkItemInformations""
                               }]
                         },
                         {
