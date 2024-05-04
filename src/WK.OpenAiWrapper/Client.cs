@@ -30,23 +30,25 @@ internal class Client : IOpenAiClient
     {
         _options = options;
         _assistantHandler = new(options);
-        string assumptionAssistantName = "AssumptionAssistant";
-        using OpenAIClient client = new (_options.Value.ApiKey);
-        Task<ListResponse<AssistantResponse>> listAssistantsTask = client.AssistantsEndpoint.ListAssistantsAsync();
-        listAssistantsTask.Wait();
-        AssistantResponse? assistantResponse = listAssistantsTask.Result.Items.SingleOrDefault(a => a.Name == assumptionAssistantName);
-        if (assistantResponse == null)
-        {
-            Task<AssistantResponse> assistantResponseTask =
-                client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT3_5_Turbo,
-                    "AssumptionAssistant", "", Prompts.AiAssumptionPrompt));
-            assistantResponseTask.Wait();
-            assistantResponse = assistantResponseTask.Result;
-        }
-        AssumptionAssistantId = assistantResponse.Id;
+
+        AssumptionAssistantId = Task.Run(GetAssumptionAssistantId).GetAwaiter().GetResult() ??
+                                throw new ArgumentNullException(
+                                    $"{nameof(AssumptionAssistantId)}: The AssumptionAssistant could not be retrieved or created. ");
         Instance = this;
     }
 
+    private async Task<string> GetAssumptionAssistantId()
+    {
+        string assumptionAssistantName = "AssumptionAssistant";
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        ListResponse<AssistantResponse> assistantResponses = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
+        AssistantResponse? assistantResponse = assistantResponses.Items.SingleOrDefault(a => a.Name == assumptionAssistantName) ??
+                                               await client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT3_5_Turbo,
+                                                   assumptionAssistantName, "", Prompts.AiAssumptionPrompt)).ConfigureAwait(false);
+
+        return assistantResponse.Id;
+    }
+    
     public async Task<Result<OpenAiImageResponse>> GetOpenAiImageResponse(string text)
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
