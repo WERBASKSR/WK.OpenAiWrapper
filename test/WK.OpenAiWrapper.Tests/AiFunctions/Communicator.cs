@@ -1,4 +1,5 @@
  using System.Text;
+ using WK.OpenAiWrapper.Helpers;
 
  namespace WK.OpenAiWrapper.Tests.AiFunctions;
 
@@ -30,6 +31,7 @@
          }
      }
 
+     [ToolFunction("Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.")]
      public async Task<string> GetWorkItemInformations(params int[] ids)
      {
          try

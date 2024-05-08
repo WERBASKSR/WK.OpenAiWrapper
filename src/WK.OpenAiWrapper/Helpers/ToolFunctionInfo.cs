@@ -3,9 +3,9 @@ using System.Reflection;
 
 namespace WK.OpenAiWrapper.Helpers;
 
-internal class MethodNameInfo
+internal class ToolFunctionInfo
 {
-    public MethodNameInfo(string methodFullName)
+    public ToolFunctionInfo(string methodFullName)
     {
         List<string> methodFullNameParts = methodFullName.Split('.').ToList();
         methodFullNameParts.ForEach(s => 
@@ -22,6 +22,7 @@ internal class MethodNameInfo
     public string MethodName { get; set; }
     public string ClassName { get; set; }
     public string NameSpaceName { get; set; }
+    public string? Description { get; set; }
     public HashSet<string> NameSpaceLayers { get; set; } = new();
 
     public MethodInfo GetMethodInfo()
@@ -37,8 +38,12 @@ internal class MethodNameInfo
                                             .Where(m => m.Name == MethodName)
                                             .OrderBy(m => m.GetParameters().Length)
                                             .FirstOrDefault();
-        
-        return methodInfo ?? throw new MissingMethodException($"The method {MethodName} was not found in the class {ClassName}.");
+        if (methodInfo == null) throw new MissingMethodException($"The method {MethodName} was not found in the class {ClassName}.");
+
+        ToolFunctionAttribute? toolFunctionAttribute = methodInfo.GetCustomAttribute<ToolFunctionAttribute>();
+        if (toolFunctionAttribute != null) Description = toolFunctionAttribute.Description;
+
+        return methodInfo;
     }
     
     private Type GetClassType()
