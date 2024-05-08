@@ -1,7 +1,7 @@
  using System.Text;
  using WK.OpenAiWrapper.Helpers;
 
- namespace WK.OpenAiWrapper.Tests.AiFunctions;
+ namespace WK.OpenAiWrapper.Tests;
 
  public class Communicator
  {

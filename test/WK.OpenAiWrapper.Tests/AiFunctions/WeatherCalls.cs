@@ -1,4 +1,4 @@
-﻿namespace WK.OpenAiWrapper.Tests.AiFunctions;
+﻿namespace WK.OpenAiWrapper.Tests;
 
 public class WeatherCalls
 {
