@@ -159,7 +159,7 @@ public class ClientTests
                             ""Instructions"": ""You are a helpful assistant."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.Communicator.GetWorkItemInformations""
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.Communicator.GetWorkItemInformations""
                               }]
                         },
                         {
@@ -167,7 +167,7 @@ public class ClientTests
                             ""Instructions"": ""You are a weather expert."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.WeatherCalls.GetWeather"",
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.WeatherCalls.GetWeather"",
                                 ""Description"": ""Retrieves information about a weather in a location.""
                               }]
                         }
