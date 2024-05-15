@@ -1,9 +1,9 @@
- using System.Text;
- using WK.OpenAiWrapper.Helpers;
+using System.Text;
+using WK.OpenAiWrapper.Helpers;
 
- namespace WK.OpenAiWrapper.Tests;
+namespace OpenAiWrapper.Tests.AiFunctions;
 
- public class Communicator
+ public class DevOpsCommunicator
  {
      public async Task<string> CreateUserStory(string title, string description, 
          string acceptanceCriteria, string releaseNoteDescription)

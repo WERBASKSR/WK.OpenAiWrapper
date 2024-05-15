@@ -47,7 +47,7 @@ public class ClientTests
         var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
         
         var serviceCollection = new ServiceCollection();
-        Pilot pilot = new ("Post Configured Pilot", "You are a crazy AI.");
+        Pilot pilot = new ("Post Configured Pilot", "You are a crazy AI.", "A crazy Pilot.");
         
         //Act
         serviceCollection.RegisterOpenAi(config, pilot);
@@ -70,7 +70,7 @@ public class ClientTests
                             ""Instructions"": ""You are a helpful assistant."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.Communicator.GetWorkItemInformations"",
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.DevOpsCommunicator.GetWorkItemInformations"",
                                 ""Description"": ""Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.""
                               }]
                         }
@@ -102,7 +102,7 @@ public class ClientTests
                             ""Instructions"": ""You are a helpful assistant."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.Communicator.GetWorkItemInformations"",
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.DevOpsCommunicator.GetWorkItemInformations"",
                                 ""Description"": ""Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.""
                               }]
                         }
@@ -159,7 +159,7 @@ public class ClientTests
                             ""Instructions"": ""You are a helpful assistant."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.Communicator.GetWorkItemInformations""
+                                ""MethodFullName"": ""OpenAiWrapper.Tests.AiFunctions.DevOpsCommunicator.GetWorkItemInformations""
                               }]
                         },
                         {
