@@ -45,7 +45,6 @@ internal class Client : IOpenAiClient
         AssistantResponse? assistantResponse = assistantResponses.Items.SingleOrDefault(a => a.Name == assumptionAssistantName) ??
                                                await client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest(Model.GPT3_5_Turbo,
                                                    assumptionAssistantName, "", Prompts.AiAssumptionPrompt)).ConfigureAwait(false);
-
         return assistantResponse.Id;
     }
     

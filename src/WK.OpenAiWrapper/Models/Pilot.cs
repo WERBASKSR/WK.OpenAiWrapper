@@ -4,7 +4,7 @@ using WK.OpenAiWrapper.Helpers;
 
 namespace WK.OpenAiWrapper.Models;
 
-public record Pilot(string Name, string Instructions, string Model = "gpt-4-turbo")
+public record Pilot(string Name, string Instructions, string Description, string Model = "gpt-4o")
 {
     // ReSharper disable once CollectionNeverUpdated.Global
     // ReSharper disable once ReturnTypeCanBeEnumerable.Global
