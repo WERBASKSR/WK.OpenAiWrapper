@@ -55,6 +55,23 @@ public async Task<string> GetResponseFromOpenAi(string userInput)
 }
 ```
 
+```csharp
+public async Task<string> GetResponseInExistingThreadFromOpenAi(string userInput, string threadId)
+{
+    var client = serviceProvider.GetService<IOpenAiClient>();
+    var response = await client.GetOpenAiResponse(userInput, threadId, "default");
+
+    if (response.IsSuccess)
+    {
+        return response.Value.Answer;
+    }
+    else
+    {
+        throw new Exception("Failed to get response from OpenAI");
+    }
+}
+```
+
 ### Working with Images
 
 ```csharp
@@ -70,6 +87,59 @@ public async Task<string> GetImageUrlFromOpenAi(string prompt)
     else
     {
         throw new Exception("Failed to generate image from OpenAI");
+    }
+}
+```
+
+```csharp
+public async Task<string> GetVisionResponseFromOpenAi(string userInput, string url)
+{
+    var client = serviceProvider.GetService<IOpenAiClient>();
+    var response = await client.GetOpenAiVisionResponse(userInput, url);
+
+    if (response.IsSuccess)
+    {
+        return response.Value.Answer;
+    }
+    else
+    {
+        throw new Exception("Failed to get response from OpenAI");
+    }
+}
+```
+
+### Working with Audio
+
+```csharp
+public async Task<string> GetAudioResponseFromOpenAi(string filePath)
+{
+    var client = serviceProvider.GetService<IOpenAiClient>();
+    var response = await client.GetOpenAiAudioResponse(filepath);
+
+    if (response.IsSuccess)
+    {
+        return response.Value.Text;
+    }
+    else
+    {
+        throw new Exception("Failed to get response from OpenAI");
+    }
+}
+```
+
+```csharp
+public async Task<byte[]> GetSpeechResponseFromOpenAi(string userInput)
+{
+    var client = serviceProvider.GetService<IOpenAiClient>();
+    var response = await client.GetOpenAiSpeechResponse(userInput);
+
+    if (response.IsSuccess)
+    {
+        return response.Value.AudioFileBytes;
+    }
+    else
+    {
+        throw new Exception("Failed to generate audio from OpenAI");
     }
 }
 ```
