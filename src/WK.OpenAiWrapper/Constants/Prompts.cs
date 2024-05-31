@@ -3,8 +3,10 @@
 internal static class Prompts
 {
     public const string AiPromptUseName = """
-                                          In the following conversation, address the conversational partner situationally and politely as '{0}'. 
-                                          Use '{0}' in your responses where it appears natural and appropriate, to ensure a personal and respectful conversation.
+                                          In the following conversation, address the conversational partner situationally and politely using 
+                                          only their first name, extracted from the provided '{0}' field which contains both the first name 
+                                          and surname. Use the first name in your responses where it appears natural and appropriate, 
+                                          to ensure a personal and respectful conversation.
                                           """;
     public const string AiAssumptionPrompt = """
                                              You are the dispatcher of AI resources and use the prompts to decide which of the available AIs is best suited to fulfill the task of the prompt. 
@@ -28,9 +30,6 @@ internal static class Prompts
                                                        },
                                                        "ProbabilityInPercent": {
                                                          "type": "number"
-                                                       },
-                                                       "AdditionalInformation": {
-                                                         "type": "string"
                                                        }
                                                      },
                                                      "required": [
@@ -48,13 +47,11 @@ internal static class Prompts
                                                  "PilotAssumptions":
                                                  [{
                                                "PilotName": "PilotIQ",
-                                               "ProbabilityInPercent": 100,
-                                               "AdditionalInformation": "bla"
+                                               "ProbabilityInPercent": 100
                                                  },
                                                  {
                                                "PilotName": "PilotIQ2",
-                                               "ProbabilityInPercent": 90,
-                                               "AdditionalInformation": "blabla"
+                                               "ProbabilityInPercent": 90
                                                  },
                                                  {
                                                "PilotName": "PilotIQ3",
