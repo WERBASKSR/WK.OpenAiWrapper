@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
+using OpenAI;
+using OpenAI.Assistants;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Models;
@@ -70,7 +72,7 @@ public class ClientTests
                             ""Instructions"": ""You are a helpful assistant."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.DevOpsCommunicator.GetWorkItemInformations"",
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.DevOpsFunctions.GetWorkItemInformations"",
                                 ""Description"": ""Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.""
                               }]
                         }
@@ -102,7 +104,7 @@ public class ClientTests
                             ""Instructions"": ""You are a helpful assistant."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.DevOpsCommunicator.GetWorkItemInformations"",
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AiFunctions.DevOpsFunctions.GetWorkItemInformations"",
                                 ""Description"": ""Retrieves and formats information about a list of work items from Azure DevOps. The ids (int[]) parameter represents an array of work item IDs.""
                               }]
                         }
@@ -157,14 +159,16 @@ public class ClientTests
                         {
                             ""Name"": ""Master"",
                             ""Instructions"": ""You are a helpful assistant."",
+                            ""Description"": ""This is a Fallback assistant for all general questions and tasks."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""OpenAiWrapper.Tests.AiFunctions.DevOpsCommunicator.GetWorkItemInformations""
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.DevOpsFunctions.GetWorkItemInformations""
                               }]
                         },
                         {
                             ""Name"": ""Weather"",
                             ""Instructions"": ""You are a weather expert."",
+                            ""Description"": ""This is a weather assistant for weather questions."",
                             ""ToolFunctions"": [
                               {
                                 ""MethodFullName"": ""WK.OpenAiWrapper.Tests.WeatherCalls.GetWeather"",
@@ -185,10 +189,17 @@ public class ClientTests
         //Act
         var result = await client.GetOpenAiPilotAssumptionResponse(text);
         
+            //Assert Arrange
+            int weatherPercentage = result.Value.PilotAssumptionContainer.PilotAssumptions.Single(p => p.PilotName == "Weather")
+                .ProbabilityInPercent;
+            int masterPercentage = result.Value.PilotAssumptionContainer.PilotAssumptions.Single(p => p.PilotName == "Master")
+                .ProbabilityInPercent;
+        
         //Assert
         Assert.NotNull(result);
         Assert.NotNull(result.Value.PilotAssumptionContainer.PilotAssumptions);
         Assert.True(result.Value.PilotAssumptionContainer.PilotAssumptions.Count == 2);
+        Assert.True(weatherPercentage > masterPercentage);
     }
     
     [Fact]
@@ -276,6 +287,40 @@ public class ClientTests
         //Assert
         Assert.True(result.IsSuccess);
         Assert.NotEmpty(result.Value.Answer);
+    }
+    
+    [Fact]
+    public async Task DeleteAssistants()
+    {
+        //Arrange
+        var json = @"{""OpenAi:ApiKey"": ""api-key"",
+                    ""OpenAi:Pilots"": [
+                        {
+                            ""Name"": ""Master"",
+                            ""Instructions"": ""You are a helpful assistant.""
+                        }
+                    ]
+                }";
+        
+        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
+        var serviceCollection = new ServiceCollection();
+        
+        serviceCollection.RegisterOpenAi(config);
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        OpenAIClient openAiClient = buildServiceProvider.GetRequiredService<OpenAIClient>();
+
+        //Act
+        ListResponse<AssistantResponse> listResponse = await openAiClient.AssistantsEndpoint.ListAssistantsAsync();
+        while (listResponse.Items.Count > 0)
+        {
+            foreach (var responseItem in listResponse.Items)
+            {
+                await responseItem.DeleteAsync();
+            }
+            listResponse = await openAiClient.AssistantsEndpoint.ListAssistantsAsync();
+        }
+        
+        openAiClient.Dispose();
     }
 
     private static IOpenAiClient? ArrangeOpenAiClient()

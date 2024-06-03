@@ -43,7 +43,7 @@ internal class Client : IOpenAiClient
         using OpenAIClient client = new (_options.Value.ApiKey);
         ListResponse<AssistantResponse> assistantResponses = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
         AssistantResponse? assistantResponse = assistantResponses.Items.SingleOrDefault(a => a.Name == assumptionAssistantName) ??
-                                               await client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest("gpt-4o",
+                                               await client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest("gpt-4-turbo",
                                                    assumptionAssistantName, "", Prompts.AiAssumptionPrompt)).ConfigureAwait(false);
         return assistantResponse.Id;
     }

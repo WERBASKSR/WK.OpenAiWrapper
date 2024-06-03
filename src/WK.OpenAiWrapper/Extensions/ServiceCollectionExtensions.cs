@@ -27,25 +27,24 @@ public static class ServiceCollectionExtensions
     
     public static IServiceCollection RegisterOpenAi(this IServiceCollection serviceCollection, IConfigurationRoot configuration, params Pilot[] pilots)
     {
-        serviceCollection.Configure<OpenAiOptions>(configuration.GetRequiredSection(OpenAiOptions.SectionName))
-            .PostConfigure<OpenAiOptions>(options =>
+        serviceCollection = serviceCollection.Configure<OpenAiOptions>(configuration.GetRequiredSection(OpenAiOptions.SectionName));
+        serviceCollection = serviceCollection.PostConfigure<OpenAiOptions>(o =>
         {
-            options.Pilots.AddRange(pilots);
-            TransferToolBuilders(options.Pilots);
+            o.Pilots.AddRange(pilots);
+            ValidatePilots(o.Pilots);
+            TransferToolBuilders(o.Pilots);
         });
-        
-        ValidatePilots(pilots);
         RegisterOpenAiClient(serviceCollection);
         return serviceCollection;
     }
     
     private static void TransferToolBuilders(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.TransferToolBuildersToTools());
     
-    private static void ValidatePilots(Pilot[] pilots)
+    private static void ValidatePilots(IEnumerable<Pilot> pilots)
     {
         //Check pilotNames are unique
         var pilotNames = pilots.Select(p => p.Name).ToList();
-        if (pilotNames.Distinct().Count() != pilotNames.Count) throw new ArgumentException("Pilot names must be unique.");
+        if (pilotNames.Distinct().Count() != pilotNames.Count) throw new ArgumentException("PilotNames names must be unique.");
     }
     
     private static void RegisterOpenAiClient(IServiceCollection serviceCollection)
