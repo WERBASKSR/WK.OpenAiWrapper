@@ -27,6 +27,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Reference Include="OpenAI-DotNet">
+        <HintPath>..\..\src\WK.OpenAiWrapper\temp\OpenAI-DotNet.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Update="xunit.runner.visualstudio">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

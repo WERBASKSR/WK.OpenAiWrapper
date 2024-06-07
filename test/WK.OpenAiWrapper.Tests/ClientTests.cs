@@ -7,6 +7,7 @@ using OpenAI.Assistants;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Result;
 using Xunit;
 
 namespace WK.OpenAiWrapper.Tests;
@@ -200,6 +201,81 @@ public class ClientTests
         Assert.NotNull(result.Value.PilotAssumptionContainer.PilotAssumptions);
         Assert.True(result.Value.PilotAssumptionContainer.PilotAssumptions.Count == 2);
         Assert.True(weatherPercentage > masterPercentage);
+    }
+    
+    [Fact]
+    public async void IOpenAiClient_GetOpenAiPilotAssumptionWithConversationResponse_WeatherPilotAssumptionAsJsonInAnswer()
+    {
+        //Arrange
+        var json = @"{""OpenAi:ApiKey"": ""test"",
+                    ""OpenAi:Pilots"": [
+                        {
+                            ""Name"": ""Master"",
+                            ""Instructions"": ""You are a helpful assistant."",
+                            ""Description"": ""This is a Fallback assistant for all general questions and tasks."",
+                            ""ToolFunctions"": [
+                              {
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.DevOpsFunctions.GetWorkItemInformations""
+                              }]
+                        },
+                        {
+                            ""Name"": ""Weather"",
+                            ""Instructions"": ""You are a weather expert."",
+                            ""Description"": ""This is a weather assistant for weather questions."",
+                            ""ToolFunctions"": [
+                              {
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.WeatherCalls.GetWeather"",
+                                ""Description"": ""Retrieves information about a weather in a location.""
+                              }]
+                        }
+                    ]
+                }";
+        
+        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
+        var serviceCollection = new ServiceCollection();
+        
+        serviceCollection.RegisterOpenAi(config);
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        var client = buildServiceProvider.GetService<IOpenAiClient>() as Client;
+        var text = "What is the weather like in Paris?";
+        
+        //Act
+        var result = await client.GetOpenAiPilotAssumptionWithConversationResponse(text, "thread_CYpL8a4ECD1V9lT53rpnkY9R");
+        
+            //Assert Arrange
+            int weatherPercentage = result.Value.PilotAssumptionContainer.PilotAssumptions.Single(p => p.PilotName == "Weather")
+                .ProbabilityInPercent;
+            int masterPercentage = result.Value.PilotAssumptionContainer.PilotAssumptions.Single(p => p.PilotName == "Master")
+                .ProbabilityInPercent;
+        
+        //Assert
+        Assert.NotNull(result);
+        Assert.NotNull(result.Value.PilotAssumptionContainer.PilotAssumptions);
+        Assert.True(result.Value.PilotAssumptionContainer.PilotAssumptions.Count == 2);
+        Assert.True(weatherPercentage > masterPercentage);
+    }
+    
+    [Fact]
+    public async void IOpenAiClient_GetConversationSummaryResponse_ReturnedASummaryOfAConversation()
+    {
+        //Arrange
+        var json = @"{""OpenAi:ApiKey"": ""apikey""}";
+        
+        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
+        var serviceCollection = new ServiceCollection();
+        
+        serviceCollection.RegisterOpenAi(config);
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        var client = buildServiceProvider.GetService<IOpenAiClient>() as Client;
+        
+        //Act
+        Result<OpenAiResponse> result = await client.GetConversationSummaryResponse("thread_Or9Zvn8tXnfCOOwpqwMKDupu");
+        
+
+        //Assert
+        Assert.NotNull(result);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.Answer);
     }
     
     [Fact]

@@ -14,6 +14,8 @@ using OpenAI.Images;
 using OpenAI.Models;
 using OpenAI.Chat;
 using WK.OpenAiWrapper.Constants;
+using static System.Net.Mime.MediaTypeNames;
+using System.Threading;
 
 namespace WK.OpenAiWrapper;
 
@@ -37,17 +39,38 @@ internal class Client : IOpenAiClient
         Instance = this;
     }
 
+    
+    private async Task<string> GetConversationSummaryAssistantId()
+    {
+        string summaryAssistantName = "SummaryAssistant";
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        ListResponse<AssistantResponse> assistantResponses = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
+        AssistantResponse? assistantResponse = assistantResponses.Items.SingleOrDefault(a => a.Name == summaryAssistantName) ?? 
+            await client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest(
+                "gpt-4o",
+                summaryAssistantName, 
+                "", 
+                Prompts.AiConversationSummaryPrompt))
+            .ConfigureAwait(false);
+        return assistantResponse.Id;
+    }
+
     private async Task<string> GetAssumptionAssistantId()
     {
         string assumptionAssistantName = "AssumptionAssistant";
-        using OpenAIClient client = new (_options.Value.ApiKey);
+        using OpenAIClient client = new(_options.Value.ApiKey);
         ListResponse<AssistantResponse> assistantResponses = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
         AssistantResponse? assistantResponse = assistantResponses.Items.SingleOrDefault(a => a.Name == assumptionAssistantName) ??
-                                               await client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest("gpt-4-turbo",
-                                                   assumptionAssistantName, "", Prompts.AiAssumptionPrompt)).ConfigureAwait(false);
+            await client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest(
+                "gpt-4o",
+                assumptionAssistantName,
+                "",
+                Prompts.AiAssumptionPrompt, 
+                responseFormat: ChatResponseFormat.Json))
+            .ConfigureAwait(false);
         return assistantResponse.Id;
     }
-    
+
     public async Task<Result<OpenAiImageResponse>> GetOpenAiImageResponse(string text)
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
@@ -101,19 +124,41 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
         var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-            { new OpenAI.Threads.Message(text) }, UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
+            { new OpenAI.Threads.Message(text) }, metadata: UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
         var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, client).ConfigureAwait(false);
 
         return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
     }
 
-    public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeAppreciated)
+    public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeEstimated)
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
+        return await GetOpenAiPilotAssumption(textToBeEstimated, client);
+    }
+
+    public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionWithConversationResponse(string textToBeEstimated, string threadId)
+    {
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        
+        var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId);
+        var lastMessageContent = (await threadResponse.ListMessagesAsync(new ListQuery(1))).Items.Single().PrintContent();
+        Result<OpenAiResponse> conversationSummary = await GetConversationSummary(threadId, client, 4);
+        string conversationMix = $"Previous Conversation:\n\nSummary: {conversationSummary.Value.Answer}\n\nLast Assistant Message:\n\n{lastMessageContent}";
+
+        return await GetOpenAiPilotAssumption($"{conversationMix}\n\n{textToBeEstimated}", client);
+    }
+
+    private async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumption(string textToBeEstimated, OpenAIClient client)
+    {
+        Result<OpenAiPilotAssumptionResponse> openAiPilotAssumptionResponse;
         var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-            { new OpenAI.Threads.Message($"Prompt: {textToBeAppreciated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(_assistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
+            { new OpenAI.Threads.Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(_assistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
         Result<OpenAiResponse> result = await GetTextAnswer(threadResponse.Id, client, AssumptionAssistantId).ConfigureAwait(false);
-        if (!result.IsSuccess) return Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
+        if (!result.IsSuccess)
+        {
+            openAiPilotAssumptionResponse = Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
+            return Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
+        }
         try
         {
             return new OpenAiPilotAssumptionResponse(JsonConvert.DeserializeObject<PilotAssumptionContainer>(result.Value.Answer));
@@ -128,10 +173,27 @@ internal class Client : IOpenAiClient
         }
     }
 
+    public async Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10)
+    {
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        return await GetConversationSummary(threadId, client, messageCount);
+    }
+
     internal async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId)
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
         return await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
+    }
+    
+    private async Task<Result<OpenAiResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount)
+    {
+        var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId);
+        var listMessagesAsync = await threadResponse.ListMessagesAsync(new ListQuery(messageCount));
+        var conversation = string.Join("\n\n", listMessagesAsync.Items.Reverse().Select(r => $"{r.Role}: {r.PrintContent()}")); 
+        threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
+            { new OpenAI.Threads.Message(conversation) })).ConfigureAwait(false);
+        var assistantId = await GetConversationSummaryAssistantId();
+        return await GetTextAnswer(threadResponse.Id, client, assistantId);
     }
     
     private async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
@@ -199,16 +261,17 @@ internal class Client : IOpenAiClient
     {
         try
         {
-            OpenAI.Chat.Message message = new (Role.User, new List<OpenAI.Chat.Content>
-            {
-                text,
-                new ImageUrl(url, ImageDetail.Low)
-            });
-            var chatRequest = new ChatRequest(new []{ message }, model: Model.GPT4_Turbo);
-            var response = await client.ChatEndpoint.GetCompletionAsync(chatRequest);
-            var answer = response.FirstChoice.Message;
-            if (answer == null) return Result<OpenAiResponse>.Error("No answer was returned from the OpenAI API.");
+            //OpenAI.Chat.Message message = new(Role.User, new List<OpenAI.Chat.Content>
+            //{
+            //    text,
+            //    new ImageUrl(url, ImageDetail.Low)
+            //});
+            //var chatRequest = new ChatRequest(new[] { message }, model: Model.GPT4_Turbo);
+            //var response = await client.ChatEndpoint.GetCompletionAsync(chatRequest);
+            //var answer = response.FirstChoice.Message;
+            //if (answer == null) return Result<OpenAiResponse>.Error("No answer was returned from the OpenAI API.");
 
+            var answer = string.Empty;
             return new OpenAiResponse(answer, "VisionCall");
         }
         catch (Exception exception)

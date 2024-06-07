@@ -20,6 +20,16 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Remove="temp\OpenAI-DotNet.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="temp\OpenAI-DotNet.dll">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" PrivateAssets="All" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
@@ -27,11 +37,16 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
         <PackageReference Include="morelinq" />
         <PackageReference Include="Newtonsoft.Json" />
-        <PackageReference Include="OpenAI-DotNet" />
     </ItemGroup>
 
     <ItemGroup>
       <None Include="Result\Result.Void.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="OpenAI-DotNet">
+        <HintPath>temp\OpenAI-DotNet.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

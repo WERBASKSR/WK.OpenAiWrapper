@@ -90,18 +90,63 @@ public interface IOpenAiClient
     /// <summary>
     ///     Gets an OpenAI Pilot Assumption Response.
     /// </summary>
-    /// <param name="textToBeAppreciated">The text to be appreciated by the OpenAI service.</param>
+    /// <param name="textToBeEstimated">The text to be estimated by the OpenAI service.</param>
     /// <returns>
     ///     A `Result` object containing an `OpenAiPilotAssumptionResponse` from the OpenAI service.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    ///     If `textToBeAppreciated` is empty or null.
+    ///     If `textToBeEstimated` is empty or null.
     /// </exception>
     /// <exception cref="InvalidOperationException">
     ///     If the thread with the specified ID cannot be found.
     /// </exception>
     /// <remarks>
-    ///     This method creates a new thread with the provided text and available pilots. It then retrieves the text answer from the thread and attempts to deserialize it into a `PilotAssumptionContainer`. If successful, it returns a `Result` object containing an `OpenAiPilotAssumptionResponse`. If an error occurs during deserialization, it returns a `Result` object containing the error message.
+    ///     This method creates a new thread with the provided text and available pilots.
+    ///     It then retrieves the text answer from the thread and attempts to deserialize it into a `PilotAssumptionContainer`.
+    ///     If successful, it returns a `Result` object containing an `OpenAiPilotAssumptionResponse`.
+    ///     If an error occurs during deserialization, it returns a `Result` object containing the error message.
     /// </remarks>
-    Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeAppreciated);
+    Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeEstimated);
+    
+    /// <summary>
+    ///     Gets an OpenAI Pilot Assumption Response within an existing thread.
+    /// </summary>
+    /// <param name="textToBeEstimated">The text to be estimated by the OpenAI service.</param>
+    /// <param name="threadId">The ThreadId of the conversation to be used for the estimation.</param>
+    /// <returns>
+    ///     A `Result` object containing an `OpenAiPilotAssumptionResponse` from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///     If `textToBeEstimated` or `threadId` is empty or null.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    ///     If the thread with the specified ID cannot be found.
+    /// </exception>
+    /// <remarks>
+    ///     This method estimates which pilot is most suitable for the given prompt, taking into account the previous conversation.
+    ///     It retrieves the text answer from the thread and attempts to deserialize it into a `PilotAssumptionContainer`.
+    ///     If successful, it returns a `Result` object containing an `OpenAiPilotAssumptionResponse`.
+    ///     If an error occurs during deserialization, it returns a `Result` object containing the error message.
+    /// </remarks>
+    Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionWithConversationResponse(string textToBeEstimated, string threadId);
+    
+    /// <summary>
+    ///     Gets a summary of the current conversation between the OpenAI service and the specified user.
+    /// </summary>
+    /// <param name="user">The name of the user whose conversation with the OpenAI service is to be summarized.</param>
+    /// <param name="messageCount">The number of recent messages to include in the summary. (Default: 10)</param>
+    /// <returns>
+    ///     A `Result` object containing an `OpenAiResponse` from the OpenAI service, which includes the summary of the conversation.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///     If `user` is empty or null.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///     If `messageCount` is less than 1.
+    /// </exception>
+    /// <remarks>
+    ///     This method retrieves the specified number of recent messages from the conversation between the specified user
+    ///     and the OpenAI service, and returns a summary of those messages.
+    /// </remarks>
+    Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string user, int messageCount = 10);
 }
