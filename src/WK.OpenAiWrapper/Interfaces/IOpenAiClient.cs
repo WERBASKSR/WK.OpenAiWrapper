@@ -1,8 +1,6 @@
 ﻿using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models;
-
 namespace WK.OpenAiWrapper.Interfaces;
-
 public interface IOpenAiClient
 {
     /// <summary>
@@ -13,6 +11,9 @@ public interface IOpenAiClient
     /// <param name="pilot">
     ///     The optional name of a pilot to influence the response. (Default: null)
     /// </param>
+    /// <param name="imageUrl">
+    ///     The optional URL of an image to be processed by the OpenAI service. (Default: null)
+    /// </param>
     /// <returns>
     ///     An `OpenAiResponse` object containing the response from the OpenAI service.
     /// </returns>
@@ -22,21 +23,24 @@ public interface IOpenAiClient
     /// <exception cref="InvalidOperationException">
     ///     If the thread with the specified ID cannot be found.
     /// </exception>
-    Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null);
-
+    Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null, string? imageUrl = null);
+    
     /// <summary>
     ///     Gets an OpenAI response by starting a new thread.
     /// </summary>
     /// <param name="text">The text to send to the OpenAI service.</param>
     /// <param name="pilot">The name of the pilot to influence the response.</param>
     /// <param name="user">The name of the user creating the thread.</param>
+    /// <param name="imageUrl">
+    ///     The optional URL of an image to be processed by the OpenAI service. (Default: null)
+    /// </param>
     /// <returns>
     ///     An `OpenAiResponse` object containing the response from the OpenAI service.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     ///     If `text`, `pilot`, or `user` is empty or null.
     /// </exception>
-    Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user);
+    Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user, string? imageUrl = null);
 
     /// <summary>
     ///     Gets an OpenAI image response.
@@ -73,20 +77,6 @@ public interface IOpenAiClient
     ///     If `text` is empty or null.
     /// </exception>
     Task<Result<OpenAiSpeechResponse>> GetOpenAiSpeechResponse(string text);
-
-    /// <summary>
-    ///     Gets an OpenAI vision response.
-    /// </summary>
-    /// <param name="text">The text to send to the OpenAI service.</param>
-    /// <param name="url">The URL of the image to be analyzed by the OpenAI service.</param>
-    /// <param name="threadId">The optional thread where the image should be analyzed</param>
-    /// <returns>
-    ///     An `OpenAiResponse` object containing the vision response from the OpenAI service.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    ///     If `text` or `url` is empty or null.
-    /// </exception>
-    Task<Result<OpenAiResponse>> GetOpenAiVisionResponse(string text, string url, string? threadId);
     
     /// <summary>
     ///     Gets an OpenAI Pilot Assumption Response.

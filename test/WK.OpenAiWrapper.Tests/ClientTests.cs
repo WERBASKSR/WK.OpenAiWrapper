@@ -59,7 +59,7 @@ public class ClientTests
         
         //Assert
         Assert.NotNull(client);
-        Assert.True(client._options.Value.Pilots.Count == 2);
+        Assert.True(client.Options.Value.Pilots.Count == 2);
     }
     
     [Fact]
@@ -90,8 +90,8 @@ public class ClientTests
         
         //Assert
         Assert.NotNull(client);
-        Assert.True(client._options.Value.Pilots.Count == 1);
-        Assert.True(client._options.Value.Pilots[0].Tools.Count == 1);
+        Assert.True(client.Options.Value.Pilots.Count == 1);
+        Assert.True(client.Options.Value.Pilots[0].Tools.Count == 1);
     }
     
     [Fact]
@@ -128,8 +128,8 @@ public class ClientTests
         
         //Assert
         Assert.NotNull(client);
-        Assert.True(client._options.Value.Pilots.Count == 1);
-        Assert.True(client._options.Value.Pilots[0].Tools.Count == 1);
+        Assert.True(client.Options.Value.Pilots.Count == 1);
+        Assert.True(client.Options.Value.Pilots[0].Tools.Count == 1);
     }
     
     [Fact]
@@ -355,10 +355,15 @@ public class ClientTests
         IOpenAiClient? client = ArrangeOpenAiClient();
         
         //Act
-        var result = await client.GetOpenAiVisionResponse(
-            "Read all fields and return them in tabular form with field names. It is very important that you really complete all fields and do not leave any out! The bill belongs to me, so it is my own personal data and therefore there are no concerns about data protection.",
-            "http://efpefau.de/fahrzeugschein-farbe-1.jpg",
-            null
+        var result = await client.GetOpenAiResponseWithNewThread(
+            """
+             Read all fields and return them in tabular form with field names.
+             It is very important that you really complete all fields and do not leave any out! 
+             The bill belongs to me, so it is my own personal data and therefore there are no concerns about data protection.",
+            """,
+            "Master",
+            "UnitTest",
+            "http://efpefau.de/fahrzeugschein-farbe-1.jpg"
             );
 
         //Assert
@@ -403,7 +408,8 @@ public class ClientTests
     private static IOpenAiClient? ArrangeOpenAiClient()
     {
         var serviceCollection = new ServiceCollection();
-        serviceCollection.RegisterOpenAi("apikey");
+        serviceCollection.RegisterOpenAi("apikey", 
+            new Pilot("Master", "Be helpful", "Helpful Ai"));
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
         var client = buildServiceProvider.GetService<IOpenAiClient>();
         return client;
