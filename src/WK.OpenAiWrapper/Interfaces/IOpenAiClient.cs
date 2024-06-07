@@ -73,19 +73,20 @@ public interface IOpenAiClient
     ///     If `text` is empty or null.
     /// </exception>
     Task<Result<OpenAiSpeechResponse>> GetOpenAiSpeechResponse(string text);
-    
+
     /// <summary>
     ///     Gets an OpenAI vision response.
     /// </summary>
     /// <param name="text">The text to send to the OpenAI service.</param>
     /// <param name="url">The URL of the image to be analyzed by the OpenAI service.</param>
+    /// <param name="threadId">The optional thread where the image should be analyzed</param>
     /// <returns>
     ///     An `OpenAiResponse` object containing the vision response from the OpenAI service.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     ///     If `text` or `url` is empty or null.
     /// </exception>
-    Task<Result<OpenAiResponse>> GetOpenAiVisionResponse(string text, string url);
+    Task<Result<OpenAiResponse>> GetOpenAiVisionResponse(string text, string url, string? threadId);
     
     /// <summary>
     ///     Gets an OpenAI Pilot Assumption Response.

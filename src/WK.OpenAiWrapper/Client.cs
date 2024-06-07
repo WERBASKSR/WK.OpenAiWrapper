@@ -16,12 +16,14 @@ using OpenAI.Chat;
 using WK.OpenAiWrapper.Constants;
 using static System.Net.Mime.MediaTypeNames;
 using System.Threading;
+using Message = OpenAI.Threads.Message;
 
 namespace WK.OpenAiWrapper;
 
 internal class Client : IOpenAiClient
 {
     private readonly string AssumptionAssistantId;
+    private readonly string VisionAssistantId;
     internal readonly IOptions<OpenAiOptions> _options;
     private readonly AssistantHandler _assistantHandler;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -36,6 +38,10 @@ internal class Client : IOpenAiClient
         AssumptionAssistantId = Task.Run(GetAssumptionAssistantId).GetAwaiter().GetResult() ??
                                 throw new ArgumentNullException(
                                     $"{nameof(AssumptionAssistantId)}: The AssumptionAssistant could not be retrieved or created. ");
+        
+        VisionAssistantId = Task.Run(GetVisionSummaryAssistantId).GetAwaiter().GetResult() ??
+                                throw new ArgumentNullException(
+                                    $"{nameof(VisionAssistantId)}: The AssumptionAssistant could not be retrieved or created. ");
         Instance = this;
     }
 
@@ -52,6 +58,21 @@ internal class Client : IOpenAiClient
                 "", 
                 Prompts.AiConversationSummaryPrompt))
             .ConfigureAwait(false);
+        return assistantResponse.Id;
+    }
+    
+    private async Task<string> GetVisionSummaryAssistantId()
+    {
+        string summaryAssistantName = "VisionAssistant";
+        using OpenAIClient client = new (_options.Value.ApiKey);
+        ListResponse<AssistantResponse> assistantResponses = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
+        AssistantResponse? assistantResponse = assistantResponses.Items.SingleOrDefault(a => a.Name == summaryAssistantName) ?? 
+                                               await client.AssistantsEndpoint.CreateAssistantAsync(new CreateAssistantRequest(
+                                                       "gpt-4o",
+                                                       summaryAssistantName, 
+                                                       "", 
+                                                       Prompts.AiConversationSummaryPrompt))
+                                                   .ConfigureAwait(false);
         return assistantResponse.Id;
     }
 
@@ -89,10 +110,10 @@ internal class Client : IOpenAiClient
         return await GetSpeech(text, client).ConfigureAwait(false);
     }
 
-    public async Task<Result<OpenAiResponse>> GetOpenAiVisionResponse(string text, string url)
+    public async Task<Result<OpenAiResponse>> GetOpenAiVisionResponse(string text, string imageUrl, string? threadId)
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
-        return await GetVision(text, url, client).ConfigureAwait(false);
+        return await GetVision(text, imageUrl, threadId, client).ConfigureAwait(false);
     }
 
     public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null)
@@ -216,7 +237,7 @@ internal class Client : IOpenAiClient
     {
         try
         {
-            ImageResult? imageResult = (await client.ImagesEndPoint.GenerateImageAsync(new ImageGenerationRequest(text, Model.DallE_3)).ConfigureAwait(false))?.SingleOrDefault();
+            var imageResult = (await client.ImagesEndPoint.GenerateImageAsync(new ImageGenerationRequest(text, Model.DallE_3)).ConfigureAwait(false))?.SingleOrDefault();
             if (imageResult == null) throw new ArgumentNullException($"ImageResult was null");
             return new OpenAiImageResponse(imageResult.Url);
         }
@@ -257,22 +278,27 @@ internal class Client : IOpenAiClient
         }
     }
 
-    private async Task<Result<OpenAiResponse>> GetVision(string text, string url, OpenAIClient client)
+    private async Task<Result<OpenAiResponse>> GetVision(string text, string url, string? threadId, OpenAIClient client)
     {
         try
         {
-            //OpenAI.Chat.Message message = new(Role.User, new List<OpenAI.Chat.Content>
-            //{
-            //    text,
-            //    new ImageUrl(url, ImageDetail.Low)
-            //});
-            //var chatRequest = new ChatRequest(new[] { message }, model: Model.GPT4_Turbo);
-            //var response = await client.ChatEndpoint.GetCompletionAsync(chatRequest);
-            //var answer = response.FirstChoice.Message;
-            //if (answer == null) return Result<OpenAiResponse>.Error("No answer was returned from the OpenAI API.");
+            var message = new Message(new[] { new Content(new ImageUrl(url)), new Content(text) });
 
-            var answer = string.Empty;
-            return new OpenAiResponse(answer, "VisionCall");
+            if (threadId is null)
+            {
+                var thread = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest([message]));
+                threadId = thread.Id;
+            }
+            else
+            {
+                await client.ThreadsEndpoint.CreateMessageAsync(threadId, message);
+            }
+
+            var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(VisionAssistantId)).WaitForDone(_assistantHandler);
+            ListResponse<MessageResponse> messagesResponse = await runResponse.ListMessagesAsync(new ListQuery(limit: 1)).ConfigureAwait(false);
+            var answer = messagesResponse.Items.SingleOrDefault()?.PrintContent();
+            if (answer == null) return Result<OpenAiResponse>.Error("No answer was returned from the OpenAI API.");
+            return new OpenAiResponse(answer, threadId);
         }
         catch (Exception exception)
         {
