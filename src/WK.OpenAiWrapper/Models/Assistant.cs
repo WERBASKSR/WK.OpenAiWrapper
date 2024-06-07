@@ -19,7 +19,7 @@ internal record Assistant(string User, Pilot Pilot) : IEquatable<(string user, s
 
     private CreateAssistantRequest GetCreateAssistantRequest()
     {
-        return new CreateAssistantRequest(Pilot.Model, UserHelper.GetPilotUserKey(Pilot.Name, User), description: null,
+        return new CreateAssistantRequest(Pilot.Model, UserHelper.GetPilotUserKey(Pilot.Name, User), description: Pilot.Description,
             $"{Pilot.Instructions}\r\n{string.Format(Prompts.AiPromptUseName, User.FirstToUpper())}", Pilot.Tools,
             metadata: UserHelper.GetDictionaryWithUser(User));
     }

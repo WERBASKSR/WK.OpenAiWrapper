@@ -12,7 +12,6 @@ using OpenAI.Assistants;
 using OpenAI.Audio;
 using OpenAI.Images;
 using OpenAI.Models;
-using OpenAI.Chat;
 using WK.OpenAiWrapper.Constants;
 using static System.Net.Mime.MediaTypeNames;
 using System.Threading;
@@ -23,7 +22,6 @@ namespace WK.OpenAiWrapper;
 internal class Client : IOpenAiClient
 {
     private readonly string AssumptionAssistantId;
-    private readonly string VisionAssistantId;
     internal readonly IOptions<OpenAiOptions> _options;
     private readonly AssistantHandler _assistantHandler;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -38,14 +36,9 @@ internal class Client : IOpenAiClient
         AssumptionAssistantId = Task.Run(GetAssumptionAssistantId).GetAwaiter().GetResult() ??
                                 throw new ArgumentNullException(
                                     $"{nameof(AssumptionAssistantId)}: The AssumptionAssistant could not be retrieved or created. ");
-        
-        VisionAssistantId = Task.Run(GetVisionSummaryAssistantId).GetAwaiter().GetResult() ??
-                                throw new ArgumentNullException(
-                                    $"{nameof(VisionAssistantId)}: The AssumptionAssistant could not be retrieved or created. ");
         Instance = this;
     }
 
-    
     private async Task<string> GetConversationSummaryAssistantId()
     {
         string summaryAssistantName = "SummaryAssistant";
@@ -145,7 +138,7 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (_options.Value.ApiKey);
         var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-            { new OpenAI.Threads.Message(text) }, metadata: UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
+            { new Message(text) }, metadata: UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
         var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, client).ConfigureAwait(false);
 
         return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
@@ -173,7 +166,7 @@ internal class Client : IOpenAiClient
     {
         Result<OpenAiPilotAssumptionResponse> openAiPilotAssumptionResponse;
         var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-            { new OpenAI.Threads.Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(_assistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
+            { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(_assistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
         Result<OpenAiResponse> result = await GetTextAnswer(threadResponse.Id, client, AssumptionAssistantId).ConfigureAwait(false);
         if (!result.IsSuccess)
         {
@@ -212,9 +205,8 @@ internal class Client : IOpenAiClient
         var listMessagesAsync = await threadResponse.ListMessagesAsync(new ListQuery(messageCount));
         var conversation = string.Join("\n\n", listMessagesAsync.Items.Reverse().Select(r => $"{r.Role}: {r.PrintContent()}")); 
         threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-            { new OpenAI.Threads.Message(conversation) })).ConfigureAwait(false);
-        var assistantId = await GetConversationSummaryAssistantId();
-        return await GetTextAnswer(threadResponse.Id, client, assistantId);
+            { new Message(conversation) })).ConfigureAwait(false);
+        return await GetTextAnswer(threadResponse.Id, client, ConversationSummaryAssistantId);
     }
     
     private async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
