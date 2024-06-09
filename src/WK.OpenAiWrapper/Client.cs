@@ -104,15 +104,15 @@ internal class Client : IOpenAiClient
     public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeEstimated)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
-        return await GetOpenAiPilotAssumption(textToBeEstimated, client);
+        return await GetOpenAiPilotAssumption(textToBeEstimated, client).ConfigureAwait(false);
     }
 
     public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionWithConversationResponse(string textToBeEstimated, string threadId)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
         
-        var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId);
-        var lastMessageContent = (await threadResponse.ListMessagesAsync(new ListQuery(1))).Items.Single().PrintContent();
+        var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId).ConfigureAwait(false);
+        var lastMessageContent = (await threadResponse.ListMessagesAsync(new ListQuery(1)).ConfigureAwait(false)).Items.Single().PrintContent();
         Result<OpenAiResponse> conversationSummary = await GetConversationSummary(threadId, client, 4);
         string conversationMix = $"Previous Conversation:\n\nSummary: {conversationSummary.Value.Answer}\n\nLast Assistant Message:\n\n{lastMessageContent}";
 
@@ -147,7 +147,7 @@ internal class Client : IOpenAiClient
     public async Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
-        return await GetConversationSummary(threadId, client, messageCount);
+        return await GetConversationSummary(threadId, client, messageCount).ConfigureAwait(false);
     }
 
     internal async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId)
@@ -159,11 +159,11 @@ internal class Client : IOpenAiClient
     private async Task<Result<OpenAiResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount)
     {
         var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId);
-        var listMessagesAsync = await threadResponse.ListMessagesAsync(new ListQuery(messageCount));
+        var listMessagesAsync = await threadResponse.ListMessagesAsync(new ListQuery(messageCount)).ConfigureAwait(false);
         var conversation = string.Join("\n\n", listMessagesAsync.Items.Reverse().Select(r => $"{r.Role}: {r.PrintContent()}")); 
         threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
             { new Message(conversation) })).ConfigureAwait(false);
-        return await GetTextAnswer(threadResponse.Id, client, _summaryAssistantId);
+        return await GetTextAnswer(threadResponse.Id, client, _summaryAssistantId).ConfigureAwait(false);
     }
     
     private async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)

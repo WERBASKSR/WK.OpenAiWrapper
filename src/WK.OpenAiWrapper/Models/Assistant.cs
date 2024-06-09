@@ -1,4 +1,5 @@
-﻿using OpenAI.Assistants;
+﻿using OpenAI;
+using OpenAI.Assistants;
 using WK.OpenAiWrapper.Constants;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Helpers;
@@ -19,18 +20,13 @@ internal record Assistant(string User, Pilot Pilot) : IEquatable<(string user, s
 
     private CreateAssistantRequest GetCreateAssistantRequest()
     {
-        return new CreateAssistantRequest(Pilot.Model, UserHelper.GetPilotUserKey(Pilot.Name, User), description: Pilot.Description,
-            $"{Pilot.Instructions}\r\n{string.Format(Prompts.AiPromptUseName, User.FirstToUpper())}", Pilot.Tools,
-            metadata: UserHelper.GetDictionaryWithUser(User));
+         return new CreateAssistantRequest(Pilot.Model, UserHelper.GetPilotUserKey(Pilot.Name, User), Pilot.Description, 
+             $"{Pilot.Instructions}\r\n{string.Format(Prompts.AiPromptUseName, User.FirstToUpper())}", 
+             Pilot.Tools, Pilot.ToolResources, UserHelper.GetDictionaryWithUser(User), 
+             responseFormat: Pilot.JsonResponse ? ChatResponseFormat.Json : ChatResponseFormat.Auto);
     }
 
-    public static bool operator ==(Assistant assistant, (string user, string pilot) keyTuple)
-    {
-        return assistant.Equals(keyTuple);
-    }
+    public static bool operator ==(Assistant assistant, (string user, string pilot) keyTuple) => assistant.Equals(keyTuple);
 
-    public static bool operator !=(Assistant assistant, (string user, string pilot) keyTuple)
-    {
-        return !assistant.Equals(keyTuple);
-    }
+    public static bool operator !=(Assistant assistant, (string user, string pilot) keyTuple) => !assistant.Equals(keyTuple);
 }

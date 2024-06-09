@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
+using Newtonsoft.Json;
 using OpenAI;
 using OpenAI.Assistants;
 using WK.OpenAiWrapper.Extensions;
@@ -403,6 +404,92 @@ public class ClientTests
         }
         
         openAiClient.Dispose();
+    }
+    
+    [Fact]
+    public async Task DeleteThreads()
+    {
+        //Arrange
+        var json = @"{""OpenAi:ApiKey"": ""api-key"",
+                    ""OpenAi:Pilots"": [
+                        {
+                            ""Name"": ""Master"",
+                            ""Instructions"": ""You are a helpful assistant.""
+                        }
+                    ]
+                }";
+        
+        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
+        var serviceCollection = new ServiceCollection();
+        
+        serviceCollection.RegisterOpenAi(config);
+        var buildServiceProvider = serviceCollection.BuildServiceProvider();
+        OpenAIClient openAiClient = buildServiceProvider.GetRequiredService<OpenAIClient>();
+
+        //Act
+
+        foreach (string id in File.ReadLines("path\\allThreadIds.csv"))
+        {
+            await openAiClient.ThreadsEndpoint.DeleteThreadAsync(id);
+            Thread.Sleep(10);
+        }
+        
+        openAiClient.Dispose();
+    }
+    
+    public class ThreadMetadata
+    {
+        public string User { get; set; }
+    }
+
+    public class ThreadData
+    {
+        public string Id { get; set; }
+        public string Object { get; set; }
+        public long CreatedAt { get; set; }
+        public ThreadMetadata Metadata { get; set; }
+    }
+
+    public class ThreadList
+    {
+        public string Object { get; set; }
+        public List<ThreadData> Data { get; set; }
+    }
+    
+    [Fact]
+    public async Task GetAllThreadIds()
+    {
+        //Arrange
+        
+        var key = "SESSION-key";
+
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {key}");
+        client.DefaultRequestHeaders.Add("OpenAI-Beta", "assistants=v2");
+        var allIds = new List<string>();
+        List<string> currentIds = (await GetNextIds(client)).ToList();
+        allIds.AddRange(currentIds);
+        
+        while (currentIds.Count == 30)
+        {
+            currentIds = (await GetNextIds(client, currentIds.Last())).ToList();
+            allIds.AddRange(currentIds);
+            Thread.Sleep(500);
+        }
+        
+        //Act
+
+    }
+
+    private static async Task<IEnumerable<string>> GetNextIds(HttpClient client, string? afterId = null)
+    {
+        string afterIdsFilter = afterId == null ? "" : $"after={afterId}&";
+        var response = await client.GetAsync($"https://api.openai.com/v1/threads?{afterIdsFilter}limit=30");
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"{response.StatusCode}: {response.ReasonPhrase}");
+        string content = await response.Content.ReadAsStringAsync();
+        var threadList = JsonConvert.DeserializeObject<ThreadList>(content);
+        return threadList!.Data.Select(d => d.Id);
     }
 
     private static IOpenAiClient? ArrangeOpenAiClient()
