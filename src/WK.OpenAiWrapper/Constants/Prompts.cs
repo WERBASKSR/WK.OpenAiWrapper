@@ -59,4 +59,9 @@ internal static class Prompts
                                                  }]
                                               }
                                              """;
+    public const string AiConversationSummaryPrompt = """
+                                             Your task is to generate a concise summary from the provided conversation, focusing on retaining key points and important details while removing irrelevant topics to reduce the token count. 
+                                             The summary should preserve the core context and intent of the conversation, omitting small talk, pleasantries, and any tangential or repetitive points. 
+                                             Ensure the summary is coherent and logically structured, using clear and straightforward language. Aim for a significantly shorter summary that captures the essence of the conversation while remaining understandable for the text AI. 
+                                             """;
 }
