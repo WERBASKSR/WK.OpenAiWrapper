@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
         });
         
         TransferToolBuilders(pilots);
+        CreateToolResources(pilots);
         ValidatePilots(pilots);
         RegisterOpenAiClient(serviceCollection);
         return serviceCollection;
@@ -33,12 +34,15 @@ public static class ServiceCollectionExtensions
             o.Pilots.AddRange(pilots);
             ValidatePilots(o.Pilots);
             TransferToolBuilders(o.Pilots);
+            CreateToolResources(o.Pilots);
         });
         RegisterOpenAiClient(serviceCollection);
         return serviceCollection;
     }
     
     private static void TransferToolBuilders(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.TransferToolBuildersToTools());
+    
+    private static void CreateToolResources(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.CreateToolResources());
     
     private static void ValidatePilots(IEnumerable<Pilot> pilots)
     {

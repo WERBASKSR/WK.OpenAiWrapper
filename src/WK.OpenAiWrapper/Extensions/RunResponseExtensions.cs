@@ -18,8 +18,7 @@ internal static class RunResponseExtensions
         {
             case RunStatus.RequiresAction:
                 var assistantResponse = await Client.Instance.GetAssistantResponseAsync(runResponse.AssistantId).ConfigureAwait(false);
-                IReadOnlyList<ToolOutput> outputs =
-                    await assistantResponse.GetToolOutputsAsync(runResponse.RequiredAction.SubmitToolOutputs.ToolCalls).ConfigureAwait(false);
+                IReadOnlyList<ToolOutput> outputs = await assistantResponse.GetToolOutputsAsync(runResponse.RequiredAction.SubmitToolOutputs.ToolCalls).ConfigureAwait(false);
                 runResponse = await runResponse.SubmitToolOutputsAsync(outputs).ConfigureAwait(false);
                 runResponse = await runResponse.WaitForDone(assistantHandler).ConfigureAwait(false);
                 break;
