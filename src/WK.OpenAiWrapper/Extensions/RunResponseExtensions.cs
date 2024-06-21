@@ -13,7 +13,7 @@ internal static class RunResponseExtensions
 
     internal static async Task<RunResponse> WaitForDone(this RunResponse runResponse, AssistantHandler assistantHandler)
     {
-        runResponse = await runResponse.WaitForStatusChangeAsync().ConfigureAwait(false);
+        runResponse = await runResponse.WaitForStatusChangeAsync(timeout: 120).ConfigureAwait(false);
         switch (runResponse.Status)
         {
             case RunStatus.RequiresAction:
