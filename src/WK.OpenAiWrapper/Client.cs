@@ -10,8 +10,10 @@ using Newtonsoft.Json;
 using WK.OpenAiWrapper.Options;
 using OpenAI.Assistants;
 using OpenAI.Audio;
+using OpenAI.Files;
 using OpenAI.Images;
 using OpenAI.Models;
+using OpenAI.VectorStores;
 using Message = OpenAI.Threads.Message;
 
 namespace WK.OpenAiWrapper;
@@ -80,7 +82,7 @@ internal class Client : IOpenAiClient
             assistantId = id;
         }
 
-        var contentList = new List<Content>{ new (text) };
+        var contentList = new List<Content> { new(text) };
         if (imageUrl != null) contentList.Add(new Content(ContentType.ImageUrl, imageUrl));
         
         await threadResponse.CreateMessageAsync(new Message(contentList)).ConfigureAwait(false);
@@ -123,6 +125,66 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
         return await GetConversationSummary(threadId, client, messageCount).ConfigureAwait(false);
+    }
+
+    public async Task<Result<OpenAiVectorStoreResponse>> UploadToNewVectorStore(string[] filePaths, string vectorStoreName)
+    {
+        try
+        {
+            using OpenAIClient client = new(Options.Value.ApiKey);
+            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
+            await UploadToVectorStore(filePaths, vectorStore.Id).ConfigureAwait(false);
+
+            return new OpenAiVectorStoreResponse(vectorStore.Id);
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
+        }
+    }
+
+    public async Task<Result<OpenAiVectorStoreResponse>> UploadToVectorStore(string[] filePaths, string vectorStoreId)
+    {
+        try
+        {
+            using OpenAIClient client = new(Options.Value.ApiKey);
+
+            foreach (var filePath in filePaths)
+            {
+                FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(filePath, "assistants").ConfigureAwait(false);
+                await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
+            }
+
+            return new OpenAiVectorStoreResponse(vectorStoreId);
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
+        }
+    }
+
+    public async Task<Result<OpenAiVectorStoreResponse>> DeleteFileInVectorStore(string fileName, string vectorStoreId)
+    {
+        try
+        {
+            using OpenAIClient client = new(Options.Value.ApiKey);
+            var fileListAll = await client.FilesEndpoint.ListFilesAsync("assistants").ConfigureAwait(false);
+            var fileIds = fileListAll
+                .Where(r => string.Equals(r.FileName, fileName, StringComparison.OrdinalIgnoreCase))
+                .Select(r => r.Id);
+            var vectorStoreFilesAll = await client.VectorStoresEndpoint.ListVectorStoreFilesAsync(vectorStoreId);
+            var vectorStoreFile = vectorStoreFilesAll.Items.SingleOrDefault(r => fileIds.Contains(r.Id));
+            if (vectorStoreFile != null)
+            {
+                await client.VectorStoresEndpoint.DeleteVectorStoreFileAsync(vectorStoreId, vectorStoreFile.Id).ConfigureAwait(false);
+                await client.FilesEndpoint.DeleteFileAsync(vectorStoreFile.Id).ConfigureAwait(false);
+            }
+            return new OpenAiVectorStoreResponse(vectorStoreId);
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
+        }
     }
 
     internal async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId)
@@ -176,7 +238,6 @@ internal class Client : IOpenAiClient
         {
             if (threadResponse?.Id != null) await client.ThreadsEndpoint.DeleteThreadAsync(threadResponse.Id).ConfigureAwait(false);
         }
-        
     }
     
     private async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)

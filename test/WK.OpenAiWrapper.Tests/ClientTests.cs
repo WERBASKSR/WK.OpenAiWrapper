@@ -286,7 +286,7 @@ public class ClientTests
         IOpenAiClient? client = ArrangeOpenAiClient();
 
         var text = "Tell me more about 42.";
-        var threadId = "threadId";
+        var threadId = "thread_jusM149NfdO1fqibBw1j7HDd";
         
         //Act
         var result = await client.GetOpenAiResponse(text, threadId);
@@ -295,6 +295,38 @@ public class ClientTests
         Assert.True(result.IsSuccess);
         Assert.NotEmpty(result.Value.Answer);
         Assert.NotEmpty(result.Value.ThreadId);
+    }
+    
+    [Fact]
+    public async Task IOpenAiClient_DeleteFileInVectorStore_FileIsDeleted()
+    {
+        //Arrange
+        IOpenAiClient? client = ArrangeOpenAiClient();
+
+        var fileName = "Result.Void.cs.txt";
+        var storeId = "vs_fozloSRtH9k8KrYRa1znvXCF";
+        
+        //Act
+        var result = await client.DeleteFileInVectorStore(fileName, storeId);
+        
+        //Assert
+        Assert.True(result.IsSuccess);
+    }
+    
+    [Fact]
+    public async Task IOpenAiClient_UploadFileInVectorStore_FileIsUploaded()
+    {
+        //Arrange
+        IOpenAiClient? client = ArrangeOpenAiClient();
+
+        var fileName = @"C:\Users\sbechtel\OneDrive - Werbas GmbH\Desktop\openai store\Result.Void.cs.txt";
+        var storeId = "vs_fozloSRtH9k8KrYRa1znvXCF";
+        
+        //Act
+        var result = await client.UploadToVectorStore([fileName], storeId);
+        
+        //Assert
+        Assert.True(result.IsSuccess);
     }
     
     [Fact]
@@ -371,132 +403,12 @@ public class ClientTests
         Assert.True(result.IsSuccess);
         Assert.NotEmpty(result.Value.Answer);
     }
-    
-    [Fact]
-    public async Task DeleteAssistants()
-    {
-        //Arrange
-        var json = @"{""OpenAi:ApiKey"": ""api-key"",
-                    ""OpenAi:Pilots"": [
-                        {
-                            ""Name"": ""Master"",
-                            ""Instructions"": ""You are a helpful assistant.""
-                        }
-                    ]
-                }";
-        
-        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
-        var serviceCollection = new ServiceCollection();
-        
-        serviceCollection.RegisterOpenAi(config);
-        var buildServiceProvider = serviceCollection.BuildServiceProvider();
-        OpenAIClient openAiClient = buildServiceProvider.GetRequiredService<OpenAIClient>();
-
-        //Act
-        ListResponse<AssistantResponse> listResponse = await openAiClient.AssistantsEndpoint.ListAssistantsAsync();
-        while (listResponse.Items.Count > 0)
-        {
-            foreach (var responseItem in listResponse.Items)
-            {
-                await responseItem.DeleteAsync();
-            }
-            listResponse = await openAiClient.AssistantsEndpoint.ListAssistantsAsync();
-        }
-        
-        openAiClient.Dispose();
-    }
-    
-    [Fact]
-    public async Task DeleteThreads()
-    {
-        //Arrange
-        var json = @"{""OpenAi:ApiKey"": ""api-key"",
-                    ""OpenAi:Pilots"": [
-                        {
-                            ""Name"": ""Master"",
-                            ""Instructions"": ""You are a helpful assistant.""
-                        }
-                    ]
-                }";
-        
-        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
-        var serviceCollection = new ServiceCollection();
-        
-        serviceCollection.RegisterOpenAi(config);
-        var buildServiceProvider = serviceCollection.BuildServiceProvider();
-        OpenAIClient openAiClient = buildServiceProvider.GetRequiredService<OpenAIClient>();
-
-        //Act
-
-        foreach (string id in File.ReadLines("path\\allThreadIds.csv"))
-        {
-            await openAiClient.ThreadsEndpoint.DeleteThreadAsync(id);
-            Thread.Sleep(10);
-        }
-        
-        openAiClient.Dispose();
-    }
-    
-    public class ThreadMetadata
-    {
-        public string User { get; set; }
-    }
-
-    public class ThreadData
-    {
-        public string Id { get; set; }
-        public string Object { get; set; }
-        public long CreatedAt { get; set; }
-        public ThreadMetadata Metadata { get; set; }
-    }
-
-    public class ThreadList
-    {
-        public string Object { get; set; }
-        public List<ThreadData> Data { get; set; }
-    }
-    
-    [Fact]
-    public async Task GetAllThreadIds()
-    {
-        //Arrange
-        
-        var key = "SESSION-key";
-
-        var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {key}");
-        client.DefaultRequestHeaders.Add("OpenAI-Beta", "assistants=v2");
-        var allIds = new List<string>();
-        List<string> currentIds = (await GetNextIds(client)).ToList();
-        allIds.AddRange(currentIds);
-        
-        while (currentIds.Count == 30)
-        {
-            currentIds = (await GetNextIds(client, currentIds.Last())).ToList();
-            allIds.AddRange(currentIds);
-            Thread.Sleep(500);
-        }
-        
-        //Act
-
-    }
-
-    private static async Task<IEnumerable<string>> GetNextIds(HttpClient client, string? afterId = null)
-    {
-        string afterIdsFilter = afterId == null ? "" : $"after={afterId}&";
-        var response = await client.GetAsync($"https://api.openai.com/v1/threads?{afterIdsFilter}limit=30");
-        if (!response.IsSuccessStatusCode)
-            throw new Exception($"{response.StatusCode}: {response.ReasonPhrase}");
-        string content = await response.Content.ReadAsStringAsync();
-        var threadList = JsonConvert.DeserializeObject<ThreadList>(content);
-        return threadList!.Data.Select(d => d.Id);
-    }
 
     private static IOpenAiClient? ArrangeOpenAiClient()
     {
         var serviceCollection = new ServiceCollection();
         serviceCollection.RegisterOpenAi("apikey", 
-            new Pilot("Master", "Be helpful", "Helpful Ai"));
+            new Pilot("pilot1", "Be helpful", "Helpful Ai"));
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
         var client = buildServiceProvider.GetService<IOpenAiClient>();
         return client;
