@@ -140,4 +140,43 @@ public interface IOpenAiClient
     ///     and the OpenAI service, and returns a summary of those messages.
     /// </remarks>
     Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string user, int messageCount = 10);
+    
+    /// <summary>
+    /// Uploads files to a new vector store.
+    /// </summary>
+    /// <param name="filePaths">An array of file paths to upload.</param>
+    /// <param name="vectorStoreName">The name of the new vector store.</param>
+    /// <returns>
+    /// A `Result` object containing an `OpenAiVectorStoreResponse` from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// If `filePaths` or `vectorStoreName` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiVectorStoreResponse>> UploadToNewVectorStore(string[] filePaths, string vectorStoreName);
+
+    /// <summary>
+    /// Uploads files to an existing vector store.
+    /// </summary>
+    /// <param name="filePaths">An array of file paths to upload.</param>
+    /// <param name="vectorStoreId">The ID of the vector store to upload files to.</param>
+    /// <returns>
+    /// A `Result` object containing an `OpenAiVectorStoreResponse` from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// If `filePaths` or `vectorStoreId` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiVectorStoreResponse>> UploadToVectorStore(string[] filePaths, string vectorStoreId);
+
+    /// <summary>
+    /// Deletes a file in a vector store.
+    /// </summary>
+    /// <param name="fileName">The name of the file to delete.</param>
+    /// <param name="vectorStoreId">The ID of the vector store containing the file to delete.</param>
+    /// <returns>
+    /// A `Result` object containing an `OpenAiVectorStoreResponse` from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// If `fileName` or `vectorStoreId` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiVectorStoreResponse>> DeleteFileInVectorStore(string fileName, string vectorStoreId);
 }
