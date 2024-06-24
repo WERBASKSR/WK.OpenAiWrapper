@@ -163,6 +163,38 @@ internal class Client : IOpenAiClient
         }
     }
 
+    public async Task<Result<OpenAiVectorStoreResponse>> UploadStreamToNewVectorStore(Stream fileStream, string fileName, string vectorStoreName)
+    {
+        try
+        {
+            using OpenAIClient client = new(Options.Value.ApiKey);
+            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
+            await UploadStreamToVectorStore(fileStream, fileName, vectorStore.Id).ConfigureAwait(false);
+
+            return new OpenAiVectorStoreResponse(vectorStore.Id);
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
+        }
+    }
+
+    public async Task<Result<OpenAiVectorStoreResponse>> UploadStreamToVectorStore(Stream fileStream, string fileName, string vectorStoreId)
+    {
+        try
+        {
+            using OpenAIClient client = new(Options.Value.ApiKey);
+            FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(new FileUploadRequest(fileStream, fileName, "assistants")).ConfigureAwait(false);
+            await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
+            await fileStream.DisposeAsync().ConfigureAwait(false);
+            return new OpenAiVectorStoreResponse(vectorStoreId);
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
+        }
+    }
+
     public async Task<Result<OpenAiVectorStoreResponse>> DeleteFileInVectorStore(string fileName, string vectorStoreId)
     {
         try
