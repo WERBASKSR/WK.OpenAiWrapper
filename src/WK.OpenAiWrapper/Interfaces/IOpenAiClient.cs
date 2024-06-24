@@ -168,6 +168,34 @@ public interface IOpenAiClient
     Task<Result<OpenAiVectorStoreResponse>> UploadToVectorStore(string[] filePaths, string vectorStoreId);
 
     /// <summary>
+    /// Uploads a file stream to a new vector store.
+    /// </summary>
+    /// <param name="fileStream">The file stream to upload.</param>
+    /// <param name="fileName">The name of the file being uploaded.</param>
+    /// <param name="vectorStoreName">The name of the new vector store.</param>
+    /// <returns>
+    /// A `Result` object containing an `OpenAiVectorStoreResponse` from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// If `fileStream`, `fileName`, or `vectorStoreName` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiVectorStoreResponse>> UploadStreamToNewVectorStore(Stream fileStream, string fileName, string vectorStoreName);
+
+    /// <summary>
+    /// Uploads a file stream to an existing vector store.
+    /// </summary>
+    /// <param name="fileStream">The file stream to upload.</param>
+    /// <param name="fileName">The name of the file being uploaded.</param>
+    /// <param name="vectorStoreId">The ID of the vector store to upload the file to.</param>
+    /// <returns>
+    /// A `Result` object containing an `OpenAiVectorStoreResponse` from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// If `fileStream`, `fileName`, or `vectorStoreName` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiVectorStoreResponse>> UploadStreamToVectorStore(Stream fileStream, string fileName, string vectorStoreId);
+
+    /// <summary>
     /// Deletes a file in a vector store.
     /// </summary>
     /// <param name="fileName">The name of the file to delete.</param>
