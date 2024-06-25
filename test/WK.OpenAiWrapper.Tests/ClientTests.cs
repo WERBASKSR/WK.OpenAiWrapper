@@ -2,9 +2,6 @@
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
-using Newtonsoft.Json;
-using OpenAI;
-using OpenAI.Assistants;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Models;
@@ -307,7 +304,7 @@ public class ClientTests
         var storeId = "vs_fozloSRtH9k8KrYRa1znvXCF";
         
         //Act
-        var result = await client.DeleteFileInVectorStore(fileName, storeId);
+        var result = await client.DeleteFileInVectorStoreByName(fileName, storeId);
         
         //Assert
         Assert.True(result.IsSuccess);

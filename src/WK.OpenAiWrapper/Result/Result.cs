@@ -4,9 +4,7 @@ namespace WK.OpenAiWrapper.Result;
 
 public class Result<T>
 {
-    protected Result()
-    {
-    }
+    protected Result() { }
 
     public Result(T value)
     {
@@ -17,15 +15,6 @@ public class Result<T>
     {
         SuccessMessage = successMessage;
     }
-
-    //public static implicit operator Result<T>(Result result) => new (default(T))
-    //{
-    //    IsSuccess = result.IsSuccess,
-    //    Errors = result.Errors,
-    //    SuccessMessage = result.SuccessMessage,
-    //    CorrelationId = result.CorrelationId,
-    //    ValidationErrors = result.ValidationErrors,
-    //};
 
     [JsonInclude] public T Value { get; init; }
 
@@ -46,30 +35,18 @@ public class Result<T>
     ///     Returns the current value.
     /// </summary>
     /// <returns></returns>
-    public object GetValue()
-    {
-        return Value;
-    }
+    public object GetValue() => Value;
 
-    public static implicit operator T(Result<T> result)
-    {
-        return result.Value;
-    }
+    public static implicit operator T(Result<T> result) => result.Value;
 
-    public static implicit operator Result<T>(T value)
-    {
-        return new Result<T>(value);
-    }
+    public static implicit operator Result<T>(T value) => new(value);
 
     /// <summary>
     ///     Represents a successful operation and accepts a values as the result of the operation
     /// </summary>
     /// <param name="value">Sets the Value property</param>
     /// <returns>A Result<typeparamref name="T" /></returns>
-    public static Result<T> Success(T value)
-    {
-        return new Result<T>(value);
-    }
+    public static Result<T> Success(T value) => new(value);
 
     /// <summary>
     ///     Represents a successful operation and accepts a values as the result of the operation
@@ -89,8 +66,7 @@ public class Result<T>
     /// </summary>
     /// <param name="errorMessages">A list of string error messages.</param>
     /// <returns>A Result<typeparamref name="T" /></returns>
-    public static Result<T> Error(params string[] errorMessages)
-    {
-        return new Result<T> { Errors = errorMessages, IsSuccess = false };
-    }
+    public static Result<T> Error(params string[] errorMessages) => new() { Errors = errorMessages, IsSuccess = false, SuccessMessage = "Error" };
+
+    public override string ToString() => IsSuccess ? SuccessMessage : string.Join(Environment.NewLine, Errors);
 }
