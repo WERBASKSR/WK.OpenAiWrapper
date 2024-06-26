@@ -32,6 +32,7 @@ internal class Client : IOpenAiClient
     {
         Options = options;
         _assistantHandler = new(options);
+        Options.Value.AssistantHandler = _assistantHandler;
         using OpenAIClient client = new (Options.Value.ApiKey);
         _assumptionAssistantId = client.GetAssumptionAssistant().GetAwaiter().GetResult()?.Id ?? throw new ArgumentNullException(
                                     $"{nameof(_assumptionAssistantId)}: The AssumptionAssistant could not be retrieved or created. ");
@@ -72,7 +73,7 @@ internal class Client : IOpenAiClient
 
         if (pilot != null)
         {
-            assistantId = await _assistantHandler.GetOrCreateAssistantId(user!, pilot, client).ConfigureAwait(false);
+            assistantId = await _assistantHandler.GetOrCreateAssistantId(user!, pilot, this).ConfigureAwait(false);
         }
         else
         {
@@ -98,7 +99,7 @@ internal class Client : IOpenAiClient
         
         var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
             { new Message(contentList) }, metadata: UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
-        var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, client).ConfigureAwait(false);
+        var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, this).ConfigureAwait(false);
 
         return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
     }
@@ -267,10 +268,33 @@ internal class Client : IOpenAiClient
         }
     }
 
-    internal async Task<AssistantResponse> GetAssistantResponseAsync(string assistantId)
+    public async Task<bool> DeleteAssistantAsync(string assistantId)
+    {
+        using OpenAIClient client = new (Options.Value.ApiKey);
+        return await client.AssistantsEndpoint.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
+    }
+
+    public async Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
         return await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
+    }
+    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest)
+    {
+        try
+        {
+            using OpenAIClient client = new (Options.Value.ApiKey);
+
+            ListResponse<AssistantResponse> assistantsResponse = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
+            var assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == assistantName)
+                                    ?? await client.AssistantsEndpoint.CreateAssistantAsync(assistantRequest).ConfigureAwait(false);
+            return assistantResponse;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     private async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumption(string textToBeEstimated, OpenAIClient client)

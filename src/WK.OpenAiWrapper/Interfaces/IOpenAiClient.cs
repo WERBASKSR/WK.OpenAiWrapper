@@ -1,5 +1,7 @@
 ﻿using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models;
+using OpenAI.Assistants;
+using OpenAI;
 namespace WK.OpenAiWrapper.Interfaces;
 public interface IOpenAiClient
 {
@@ -246,4 +248,8 @@ public interface IOpenAiClient
     /// If `fileId` or `vectorStoreId` is empty or null.
     /// </exception>
     Task<Result<OpenAiVectorStoreResponse>> DeleteFileInVectorStoreById(string fileId, string vectorStoreId);
+
+    internal Task<bool> DeleteAssistantAsync(string assistantId);
+    internal Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId);
+    internal Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest);
 }

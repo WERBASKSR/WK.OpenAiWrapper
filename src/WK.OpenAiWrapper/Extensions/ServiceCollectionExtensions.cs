@@ -40,11 +40,11 @@ public static class ServiceCollectionExtensions
         return serviceCollection;
     }
     
-    private static void TransferToolBuilders(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.TransferToolBuildersToTools());
+    internal static void TransferToolBuilders(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.TransferToolBuildersToTools());
     
-    private static void CreateToolResources(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.CreateToolResources());
+    internal static void CreateToolResources(IEnumerable<Pilot> pilots) => pilots.ForEach(p => p.CreateToolResources());
     
-    private static void ValidatePilots(IEnumerable<Pilot> pilots)
+    internal static void ValidatePilots(IEnumerable<Pilot> pilots)
     {
         //Check pilotNames are unique
         var pilotNames = pilots.Select(p => p.Name).ToList();
@@ -55,5 +55,6 @@ public static class ServiceCollectionExtensions
     {
         serviceCollection.AddScoped(p => new OpenAIClient(new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
         serviceCollection.AddSingleton<IOpenAiClient, Client>();
+        serviceCollection.AddSingleton<IOpenAiClientConfig, ClientConfig>();
     }
 }

@@ -161,7 +161,7 @@ public class ClientTests
                             ""Description"": ""This is a Fallback assistant for all general questions and tasks."",
                             ""ToolFunctions"": [
                               {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.DevOpsFunctions.GetWorkItemInformations""
+                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AdoCom.GetWIInfos""
                               }]
                         },
                         {
@@ -393,7 +393,7 @@ public class ClientTests
             """,
             "Master",
             "UnitTest",
-            "http://efpefau.de/fahrzeugschein-farbe-1.jpg"
+            "http://domainname.de/fahrzeugschein-farbe-1.jpg"
             );
 
         //Assert
@@ -404,7 +404,7 @@ public class ClientTests
     private static IOpenAiClient? ArrangeOpenAiClient()
     {
         var serviceCollection = new ServiceCollection();
-        serviceCollection.RegisterOpenAi("apikey", 
+        serviceCollection.RegisterOpenAi("", 
             new Pilot("pilot1", "Be helpful", "Helpful Ai"));
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
         var client = buildServiceProvider.GetService<IOpenAiClient>();
