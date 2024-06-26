@@ -1,4 +1,5 @@
-﻿using OpenAI;
+﻿using System.Text.RegularExpressions;
+using OpenAI;
 using OpenAI.Threads;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Result;
@@ -6,6 +7,7 @@ using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Interfaces;
 using Microsoft.Extensions.Options;
+using MoreLinq;
 using Newtonsoft.Json;
 using WK.OpenAiWrapper.Options;
 using OpenAI.Assistants;
@@ -15,6 +17,8 @@ using OpenAI.Images;
 using OpenAI.Models;
 using OpenAI.VectorStores;
 using Message = OpenAI.Threads.Message;
+using System.Collections.Generic;
+using Microsoft.VisualBasic;
 
 namespace WK.OpenAiWrapper;
 
@@ -62,7 +66,7 @@ internal class Client : IOpenAiClient
         return await GetSpeech(text, client).ConfigureAwait(false);
     }
 
-    public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null, string? imageUrl = null)
+    public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
         
@@ -83,25 +87,73 @@ internal class Client : IOpenAiClient
             assistantId = id;
         }
 
-        var contentList = new List<Content> { new(text) };
-        if (imageUrl != null) contentList.Add(new Content(ContentType.ImageUrl, imageUrl));
         
-        await threadResponse.CreateMessageAsync(new Message(contentList)).ConfigureAwait(false);
-        return await GetTextAnswer(threadId, client, assistantId).ConfigureAwait(false);
+        var attachmentList = new List<(Attachment attachment, string vectorStoreId)>();
+        var contentList = new List<Content>();
+        try
+        {
+            (List<Content>? contents, List<(Attachment attachment, string vectorStoreId, string fileName)>? attachments) = await GetContentAndAttachmentLists(attachmentUrls);
+            attachmentList.AddRange(attachments.Select(t => (t.attachment, t.vectorStoreId)));
+            text += $"{Environment.NewLine}";
+            attachments.ForEach(t => text += $"{Environment.NewLine}Use: {t.fileName}");
+            contentList.Add(new(text));
+            contentList.AddRange(contents);
+            await threadResponse.CreateMessageAsync(new Message(contentList, attachments: attachmentList.Select(t => t.attachment)))
+                .ConfigureAwait(false);
+            return await GetTextAnswer(threadId, client, assistantId).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiResponse>.Error(e.Message);
+        }
+        finally
+        {
+            if (deleteFilesAfterUse)
+            {
+                foreach ((Attachment attachment, string vectorStoreId) in attachmentList)
+                {
+                    await DeleteFileInVectorStoreById(attachment.FileId, vectorStoreId).ConfigureAwait(false);
+                } 
+            }
+        }
     }
 
-    public async Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user, string? imageUrl = null)
+    public async Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
-        
-        var contentList = new List<Content>{ new (text) };
-        if (imageUrl != null) contentList.Add(new Content(ContentType.ImageUrl, imageUrl));
-        
-        var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-            { new Message(contentList) }, metadata: UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
-        var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, this).ConfigureAwait(false);
 
-        return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
+        var attachmentList = new List<(Attachment attachment, string vectorStoreId)>();
+        var contentList = new List<Content>();
+        try
+        {
+            (List<Content> contents, List<(Attachment attachment, string vectorStoreId, string fileName)> attachments) = await GetContentAndAttachmentLists(attachmentUrls);
+            
+            attachmentList.AddRange(attachments.Select(t => (t.attachment, t.vectorStoreId)));
+            text += $"{Environment.NewLine}";
+            attachments.ForEach(t => text += $"{Environment.NewLine}Use: {t.fileName}");
+            contentList.Add(new(text));
+            contentList.AddRange(contents);
+
+            var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
+                { new Message(contentList, attachments: attachmentList.Select(t => t.attachment)) }, metadata: UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
+            var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, this).ConfigureAwait(false);
+
+            return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiResponse>.Error(e.Message);
+        }
+        finally
+        {
+            if (deleteFilesAfterUse)
+            {
+                foreach ((Attachment attachment, string vectorStoreId) in attachmentList)
+                {
+                    await DeleteFileInVectorStoreById(attachment.FileId, vectorStoreId).ConfigureAwait(false);
+                } 
+            }
+        }
     }
 
     public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeEstimated)
@@ -128,13 +180,13 @@ internal class Client : IOpenAiClient
         return await GetConversationSummary(threadId, client, messageCount).ConfigureAwait(false);
     }
 
-    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(string[] filePaths, string vectorStoreName)
+    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(string[] filePaths, string vectorStoreName, bool waitForDoneStatus = false)
     {
         try
         {
             using OpenAIClient client = new(Options.Value.ApiKey);
             var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
-            return await UploadToVectorStore(filePaths, vectorStore.Id).ConfigureAwait(false);
+            return await UploadToVectorStore(filePaths, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -142,7 +194,7 @@ internal class Client : IOpenAiClient
         }
     }
 
-    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToVectorStore(string[] filePaths, string vectorStoreId)
+    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToVectorStore(string[] filePaths, string vectorStoreId, bool waitForDoneStatus = false)
     {
         try
         {
@@ -151,8 +203,9 @@ internal class Client : IOpenAiClient
 
             foreach (var filePath in filePaths)
             {
-                FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(filePath, "assistants").ConfigureAwait(false);
-                await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
+                FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(filePath, FilePurpose.Assistants).ConfigureAwait(false);
+                VectorStoreFileResponse vectorStoreFileResponse = await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
+                if (waitForDoneStatus) await vectorStoreFileResponse.WaitForDone().ConfigureAwait(false);
                 list.Add((fileResponse.FileName, fileResponse.Id));
             }
 
@@ -164,14 +217,14 @@ internal class Client : IOpenAiClient
         }
     }
     
-    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(List<(string FileName, byte[] FileBytes)> files, string vectorStoreName)
+    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(List<(string FileName, byte[] FileBytes)> files, string vectorStoreName, bool waitForDoneStatus = false)
     {
         try
         {
             using OpenAIClient client = new(Options.Value.ApiKey);
             var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
 
-            return await UploadToVectorStore(files, vectorStore.Id).ConfigureAwait(false);
+            return await UploadToVectorStore(files, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -179,7 +232,7 @@ internal class Client : IOpenAiClient
         }
     }
     
-    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToVectorStore(List<(string FileName, byte[] FileBytes)> files, string vectorStoreId)
+    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToVectorStore(List<(string FileName, byte[] FileBytes)> files, string vectorStoreId, bool waitForDoneStatus = false)
     {
         try
         {
@@ -188,7 +241,7 @@ internal class Client : IOpenAiClient
 
             foreach (var file in files)
             {
-                var fileResponseResult = await UploadStreamToVectorStore(new MemoryStream(file.FileBytes), file.FileName, vectorStoreId).ConfigureAwait(false);
+                var fileResponseResult = await UploadStreamToVectorStore(new MemoryStream(file.FileBytes), file.FileName, vectorStoreId, waitForDoneStatus).ConfigureAwait(false);
                 if (fileResponseResult.IsSuccess) list.Add((file.FileName, fileResponseResult.Value.FileId!));
             }
 
@@ -200,13 +253,13 @@ internal class Client : IOpenAiClient
         }
     }
     
-    public async Task<Result<OpenAiVectorStoreResponse>> UploadStreamToNewVectorStore(Stream fileStream, string fileName, string vectorStoreName)
+    public async Task<Result<OpenAiVectorStoreResponse>> UploadStreamToNewVectorStore(Stream fileStream, string fileName, string vectorStoreName, bool waitForDoneStatus = false)
     {
         try
         {
             using OpenAIClient client = new(Options.Value.ApiKey);
             var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
-            return await UploadStreamToVectorStore(fileStream, fileName, vectorStore.Id).ConfigureAwait(false);
+            return await UploadStreamToVectorStore(fileStream, fileName, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -214,14 +267,15 @@ internal class Client : IOpenAiClient
         }
     }
 
-    public async Task<Result<OpenAiVectorStoreResponse>> UploadStreamToVectorStore(Stream fileStream, string fileName, string vectorStoreId)
+    public async Task<Result<OpenAiVectorStoreResponse>> UploadStreamToVectorStore(Stream fileStream, string fileName, string vectorStoreId, bool waitForDoneStatus = false)
     {
         try
         {
             using OpenAIClient client = new(Options.Value.ApiKey);
-            FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(new FileUploadRequest(fileStream, fileName, "assistants")).ConfigureAwait(false);
-            await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
+            FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(new FileUploadRequest(fileStream, fileName, FilePurpose.Assistants)).ConfigureAwait(false);
+            VectorStoreFileResponse vectorStoreFileResponse = await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
             await fileStream.DisposeAsync().ConfigureAwait(false);
+            if (waitForDoneStatus) await vectorStoreFileResponse.WaitForDone().ConfigureAwait(false);
             return new OpenAiVectorStoreResponse(vectorStoreId, fileResponse.Id);
         }
         catch (Exception e)
@@ -235,7 +289,7 @@ internal class Client : IOpenAiClient
         try
         {
             using OpenAIClient client = new(Options.Value.ApiKey);
-            var fileListAll = await client.FilesEndpoint.ListFilesAsync("assistants").ConfigureAwait(false);
+            var fileListAll = await client.FilesEndpoint.ListFilesAsync(FilePurpose.Assistants).ConfigureAwait(false);
             var fileIds = fileListAll
                 .Where(r => string.Equals(r.FileName, fileName, StringComparison.OrdinalIgnoreCase))
                 .Select(r => r.Id);
@@ -266,6 +320,12 @@ internal class Client : IOpenAiClient
         {
             return Result<OpenAiVectorStoreResponse>.Error(e.Message);
         }
+    }
+
+    public async Task<VectorStoreFileResponse> GetVectorStoreFileStatusAsync(string vectorStoreId, string fileId)
+    {
+        using OpenAIClient client = new (Options.Value.ApiKey);
+        return await client.VectorStoresEndpoint.GetVectorStoreFileAsync(vectorStoreId, fileId).ConfigureAwait(false);
     }
 
     public async Task<bool> DeleteAssistantAsync(string assistantId)
@@ -357,7 +417,7 @@ internal class Client : IOpenAiClient
         var answer = messagesResponse.Items.SingleOrDefault()?.PrintContent();
         if (answer == null) return Result<OpenAiResponse>.Error("No answer was returned from the OpenAI API.");
 
-        return new OpenAiResponse(answer, threadId);
+        return new OpenAiResponse(answer, threadId, assistantId);
     }
 
     private async Task<Result<OpenAiImageResponse>> GetImage(string text, OpenAIClient client)
@@ -403,5 +463,37 @@ internal class Client : IOpenAiClient
             Console.WriteLine(exception);
             return Result<OpenAiSpeechResponse>.Error($"Get Speech failed: {exception.Message}");
         }
+    }
+
+    private async Task<(List<Content> ContentList, List<(Attachment attachment, string vectorStoreId, string fileName)> AttachmentVectorStoreIdList)> GetContentAndAttachmentLists(IEnumerable<string>? attachmentUrls)
+    {
+        var contentList = new List<Content>();
+        var attachmentList = new List<(Attachment attachment, string vectorStoreId, string fileName)>();
+
+        if (attachmentUrls == null) return (contentList, attachmentList);
+        
+        IEnumerable<string> imageUrls = attachmentUrls.Where(s => Regex.IsMatch(s,
+            @"^https?:\/\/[\w.-]+\/[\w.-]*\.(?:gif|jpg|jpeg|png|bmp)$",
+            RegexOptions.IgnoreCase));
+        imageUrls.ForEach(u => contentList.Add(new Content(ContentType.ImageUrl, u)));
+        IEnumerable<string> notImageAttachments = attachmentUrls.Except(imageUrls);
+        
+        if (!notImageAttachments.Any()) return (contentList, attachmentList);
+        
+        using var httpClient = new HttpClient();
+        foreach (string notImageAttachment in notImageAttachments)
+        {
+            var uri = new Uri(notImageAttachment);
+            string fileName = uri.Segments.Last();
+            Result<OpenAiVectorStoreResponse> fileResponseResult = await UploadStreamToNewVectorStore(
+                await httpClient.GetStreamAsync(uri),
+                fileName,
+                $"temp_{Guid.NewGuid()}",
+                true).ConfigureAwait(false);
+            if (!fileResponseResult.IsSuccess) throw new Exception(string.Join(';', fileResponseResult.Errors));
+            attachmentList.Add((new Attachment(fileResponseResult.Value.FileId, Tool.FileSearch), fileResponseResult.Value.VectorStoreId, fileName));
+        }
+
+        return (contentList, attachmentList);
     }
 }

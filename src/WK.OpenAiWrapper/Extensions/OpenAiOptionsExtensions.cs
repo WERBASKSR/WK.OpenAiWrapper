@@ -21,7 +21,7 @@ internal static class OpenAiOptionsExtensions
         return options;
     }
     
-    internal static async Task<Pilot?> DeletePilotAsync(this OpenAiOptions options, string pilotName, IOpenAiClient client)
+    internal static async Task<Pilot?> DeletePilotAsync(this OpenAiOptions options, string pilotName)
     {
         Pilot? pilot = options.GetPilot(pilotName);
         if (pilot == null) return pilot;
@@ -36,18 +36,18 @@ internal static class OpenAiOptionsExtensions
         foreach (var toDeleteAssistant in toDeleteAssistants)
         {
             var assistantId = await options.AssistantHandler
-                .GetOrCreateAssistantId(toDeleteAssistant.User, toDeleteAssistant.Pilot.Name, client)
+                .GetOrCreateAssistantId(toDeleteAssistant.User, toDeleteAssistant.Pilot.Name, Client.Instance)
                 .ConfigureAwait(false);
-            await client.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
+            await Client.Instance.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
             options.AssistantHandler.AssistantIds.RemoveValues(assistantId);
         }
 
         return pilot;
     }
     
-    internal static async Task<OpenAiOptions> UpdatePilotAsync(this OpenAiOptions options, Pilot pilot, IOpenAiClient client)
+    internal static async Task<OpenAiOptions> UpdatePilotAsync(this OpenAiOptions options, Pilot pilot)
     {
-        await DeletePilotAsync(options, pilot.Name, client).ConfigureAwait(false);
+        await DeletePilotAsync(options, pilot.Name).ConfigureAwait(false);
         AddPilot(options, pilot);
         return options;
     }

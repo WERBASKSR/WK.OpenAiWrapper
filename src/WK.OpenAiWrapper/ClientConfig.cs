@@ -9,12 +9,10 @@ namespace WK.OpenAiWrapper;
 
 public class ClientConfig : IOpenAiClientConfig
 {
-    private readonly IOpenAiClient _client;
     private readonly OpenAiOptions _options;
 
-    public ClientConfig(IOpenAiClient client, IOptions<OpenAiOptions> options)
+    public ClientConfig(IOptions<OpenAiOptions> options)
     {
-        _client = client;
         _options = options.Value;
     }
     
@@ -37,7 +35,7 @@ public class ClientConfig : IOpenAiClientConfig
     {
         try
         {
-            await _options.UpdatePilotAsync(pilot, _client);
+            await _options.UpdatePilotAsync(pilot);
             return pilot;
         }
         catch (Exception e)
@@ -50,7 +48,7 @@ public class ClientConfig : IOpenAiClientConfig
     {
         try
         {
-            Pilot? pilot = await _options.DeletePilotAsync(pilotName, _client);
+            Pilot? pilot = await _options.DeletePilotAsync(pilotName);
             return pilot ?? throw new Exception($"{pilotName} could not be deleted because he was not found.");
         }
         catch (Exception e)
