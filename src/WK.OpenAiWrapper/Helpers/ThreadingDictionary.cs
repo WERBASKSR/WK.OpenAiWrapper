@@ -74,11 +74,13 @@ public class ThreadingDictionary<TK, TV> : ConcurrentDictionary<TK, TV>, IDispos
     /// Removes the value.
     /// </summary>
     /// <param name="value">The value.</param>
-    public virtual void RemoveValue(TV value)
+    public virtual void RemoveValues(TV value)
     {
         if(this.All(pair => !pair.Value.Equals(value))) return;
-        KeyValuePair<TK, TV> keyValuePair = this.FirstOrDefault(pair => pair.Value.Equals(value));
-        RemoveKey(keyValuePair.Key);
+        foreach (var pair in this.Where(p => p.Value.Equals(value)))
+        {
+            RemoveKey(pair.Key);
+        }
     }
 
     /// <summary>
