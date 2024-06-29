@@ -19,6 +19,7 @@ using OpenAI.VectorStores;
 using Message = OpenAI.Threads.Message;
 using System.Collections.Generic;
 using Microsoft.VisualBasic;
+using WK.OpenAiWrapper.Constants;
 
 namespace WK.OpenAiWrapper;
 
@@ -94,8 +95,15 @@ internal class Client : IOpenAiClient
         {
             (List<Content>? contents, List<(Attachment attachment, string vectorStoreId, string fileName)>? attachments) = await GetContentAndAttachmentLists(attachmentUrls);
             attachmentList.AddRange(attachments.Select(t => (t.attachment, t.vectorStoreId)));
-            text += $"{Environment.NewLine}";
-            attachments.ForEach(t => text += $"{Environment.NewLine}Use: {t.fileName}");
+            if (attachments.Any())
+            {
+                text += $"{Environment.NewLine}{Environment.NewLine}";
+                string fileNames = string.Join(", ", attachments.Select(t => t.fileName));
+                text += string.Format(attachments.Count > 1 
+                        ? Prompts.UseAttachedFiles 
+                        : Prompts.UseAttachedFile,
+                        fileNames);
+            }
             contentList.Add(new(text));
             contentList.AddRange(contents);
             await threadResponse.CreateMessageAsync(new Message(contentList, attachments: attachmentList.Select(t => t.attachment)))
@@ -129,8 +137,15 @@ internal class Client : IOpenAiClient
             (List<Content> contents, List<(Attachment attachment, string vectorStoreId, string fileName)> attachments) = await GetContentAndAttachmentLists(attachmentUrls);
             
             attachmentList.AddRange(attachments.Select(t => (t.attachment, t.vectorStoreId)));
-            text += $"{Environment.NewLine}";
-            attachments.ForEach(t => text += $"{Environment.NewLine}Use: {t.fileName}");
+            if (attachments.Any())
+            {
+                text += $"{Environment.NewLine}{Environment.NewLine}";
+                string fileNames = string.Join(", ", attachments.Select(t => t.fileName));
+                text += string.Format(attachments.Count > 1 
+                        ? Prompts.UseAttachedFiles 
+                        : Prompts.UseAttachedFile,
+                    fileNames);
+            }
             contentList.Add(new(text));
             contentList.AddRange(contents);
 

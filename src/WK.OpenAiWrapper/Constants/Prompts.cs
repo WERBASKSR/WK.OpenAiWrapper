@@ -2,6 +2,12 @@
 
 internal static class Prompts
 {
+    public const string UseAttachedFile = """
+                                          This refers to the file {0}. Use the file_search on this file to complete the task!
+                                          """;
+    public const string UseAttachedFiles = """
+                                          This refers to the files {0}. Use the file_search on this files to complete the task!
+                                          """;
     public const string AiPromptUseName = """
                                           In the following conversation, address the conversational partner situationally and politely using 
                                           only their first name, extracted from the provided '{0}' field which contains both the first name 
