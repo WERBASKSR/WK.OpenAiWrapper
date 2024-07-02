@@ -263,6 +263,7 @@ public interface IOpenAiClient
     Task<Result<OpenAiVectorStoreResponse>> DeleteFileInVectorStoreById(string fileId, string vectorStoreId);
 
     internal Task<bool> DeleteAssistantAsync(string assistantId);
+    internal Task<AssistantResponse> ModifyAssistantResponseByIdAsync(string assistantId, CreateAssistantRequest assistantRequest);
     internal Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId);
     internal Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest);
     internal Task<VectorStoreFileResponse> GetVectorStoreFileStatusAsync(string vectorStoreId, string fileId);

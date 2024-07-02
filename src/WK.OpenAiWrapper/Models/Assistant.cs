@@ -8,7 +8,7 @@ namespace WK.OpenAiWrapper.Models;
 
 internal record Assistant(string User, Pilot Pilot) : IEquatable<(string user, string pilot)>
 {
-    private CreateAssistantRequest? _createAssistantRequest;
+    internal CreateAssistantRequest? _createAssistantRequest;
 
     public CreateAssistantRequest CreateAssistantRequest => _createAssistantRequest ??= GetCreateAssistantRequest();
 

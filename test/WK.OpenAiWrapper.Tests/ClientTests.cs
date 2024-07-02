@@ -365,7 +365,7 @@ public class ClientTests
 
     private static IServiceProvider ArrangeOpenAiClient()
     {
-        var json = @"{""OpenAi:ApiKey"": ""testapikey"",
+        var json = @"{""OpenAi:ApiKey"": ""apikey"",
                     ""OpenAi:Pilots"": [
                         {
                             ""Name"": ""Master"",
