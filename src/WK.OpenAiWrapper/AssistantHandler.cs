@@ -15,30 +15,33 @@ internal class AssistantHandler(IOptions<OpenAiOptions> options)
     private readonly Lazy<HashSet<PilotDescription>> _pilotDescriptions = new(() => options.Value.Pilots.Select(p => p.ToPilotDescription()).ToHashSet());
     public HashSet<PilotDescription> PilotDescriptions => _pilotDescriptions.Value;
     
-    public CreateAssistantRequest GetCreateAssistantRequest(string user, string pilotName)
+    public Assistant GetCreateAssistant(string user, string pilotName)
     {
         string pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
         var assistant = Assistants.GetValue(pilotUserKey);
-        if (assistant != null) return assistant.CreateAssistantRequest;
+        if (assistant != null) return assistant;
 
         var pilot = options.Value.Pilots?.SingleOrDefault(p => p.Name == pilotName) ?? throw new NotImplementedException($"{pilotName} is not registered in ServiceCollection");
         assistant = new Assistant(user, pilot);
         Assistants.Add(pilotUserKey, assistant);
 
-        return assistant.CreateAssistantRequest;
+        return assistant;
     }
 
-    public async Task<string> GetOrCreateAssistantId(string user, string pilotName, IOpenAiClient client) =>
-        AssistantIds.GetValue(UserHelper.GetPilotUserKey(pilotName, user)) ??
-        (await GetOrCreateAssistantResponse(user, pilotName, client).ConfigureAwait(false)).Id;
+    public CreateAssistantRequest GetCreateAssistantRequest(string user, string pilotName)
+        => GetCreateAssistant(user, pilotName).CreateAssistantRequest;
 
-    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string user, string pilotName, IOpenAiClient client)
+    public async Task<string> GetOrCreateAssistantId(string user, string pilotName) =>
+        AssistantIds.GetValue(UserHelper.GetPilotUserKey(pilotName, user)) ??
+        (await GetOrCreateAssistantResponse(user, pilotName).ConfigureAwait(false)).Id;
+
+    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string user, string pilotName)
     {
         var pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
         var assistantId = AssistantIds.GetValue(pilotUserKey);
-        if (assistantId != null) return await client.GetAssistantResponseByIdAsync(assistantId).ConfigureAwait(false);
+        if (assistantId != null) return await Client.Instance.GetAssistantResponseByIdAsync(assistantId).ConfigureAwait(false);
 
-        AssistantResponse assistantResponse = await client.GetOrCreateAssistantResponse(pilotUserKey, GetCreateAssistantRequest(user, pilotName)).ConfigureAwait(false);
+        AssistantResponse assistantResponse = await Client.Instance.GetOrCreateAssistantResponse(pilotUserKey, GetCreateAssistantRequest(user, pilotName)).ConfigureAwait(false);
         AssistantIds.Add(pilotUserKey, assistantResponse.Id);
         return assistantResponse;
     }

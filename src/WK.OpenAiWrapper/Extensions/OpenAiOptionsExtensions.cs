@@ -1,7 +1,4 @@
-﻿using MoreLinq;
-using OpenAI.Assistants;
-using WK.OpenAiWrapper.Interfaces;
-using WK.OpenAiWrapper.Models;
+﻿using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Options;
 
 namespace WK.OpenAiWrapper.Extensions;
@@ -36,7 +33,7 @@ internal static class OpenAiOptionsExtensions
         foreach (var toDeleteAssistant in toDeleteAssistants)
         {
             var assistantId = await options.AssistantHandler
-                .GetOrCreateAssistantId(toDeleteAssistant.User, toDeleteAssistant.Pilot.Name, Client.Instance)
+                .GetOrCreateAssistantId(toDeleteAssistant.User, toDeleteAssistant.Pilot.Name)
                 .ConfigureAwait(false);
             await Client.Instance.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
             options.AssistantHandler.AssistantIds.RemoveValues(assistantId);
@@ -50,5 +47,22 @@ internal static class OpenAiOptionsExtensions
         await DeletePilotAsync(options, pilot.Name).ConfigureAwait(false);
         AddPilot(options, pilot);
         return options;
+    }
+    
+    internal static async Task<Pilot?> ModifyAssistantAsync(this OpenAiOptions options, string pilotName, string userName)
+    {
+        Pilot? pilot = options.GetPilot(pilotName);
+        if (pilot == null) return pilot;
+        
+        pilot.TransferToolBuildersToTools();
+        pilot.CreateToolResources();
+        
+        string assistantId = await options.AssistantHandler.GetOrCreateAssistantId(userName, pilotName);
+        var assistant = options.AssistantHandler.GetCreateAssistant(userName, pilotName);
+        assistant._createAssistantRequest = null;
+
+        await Client.Instance.ModifyAssistantResponseByIdAsync(assistantId, assistant.CreateAssistantRequest);
+
+        return pilot;
     }
 }

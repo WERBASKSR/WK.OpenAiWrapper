@@ -17,8 +17,9 @@ using OpenAI.Images;
 using OpenAI.Models;
 using OpenAI.VectorStores;
 using Message = OpenAI.Threads.Message;
-using System.Collections.Generic;
-using Microsoft.VisualBasic;
+using WK.OpenAiWrapper.Constants;
+using System.Reflection;
+using System.Xml.Linq;
 
 namespace WK.OpenAiWrapper;
 
@@ -77,7 +78,7 @@ internal class Client : IOpenAiClient
 
         if (pilot != null)
         {
-            assistantId = await _assistantHandler.GetOrCreateAssistantId(user!, pilot, this).ConfigureAwait(false);
+            assistantId = await _assistantHandler.GetOrCreateAssistantId(user!, pilot).ConfigureAwait(false);
         }
         else
         {
@@ -86,7 +87,6 @@ internal class Client : IOpenAiClient
             if (id == null) return Result<OpenAiResponse>.Error($"No runs were found for the threadId {threadId}.");
             assistantId = id;
         }
-
         
         var attachmentList = new List<(Attachment attachment, string vectorStoreId)>();
         var contentList = new List<Content>();
@@ -94,8 +94,16 @@ internal class Client : IOpenAiClient
         {
             (List<Content>? contents, List<(Attachment attachment, string vectorStoreId, string fileName)>? attachments) = await GetContentAndAttachmentLists(attachmentUrls);
             attachmentList.AddRange(attachments.Select(t => (t.attachment, t.vectorStoreId)));
-            text += $"{Environment.NewLine}";
-            attachments.ForEach(t => text += $"{Environment.NewLine}Use: {t.fileName}");
+            foreach (var t in attachmentList) await AddVectorStoreIdToAssistantByIdAsync(assistantId, t.vectorStoreId);
+            if (attachments.Any())
+            {
+                text += $"{Environment.NewLine}{Environment.NewLine}";
+                string fileNames = string.Join(", ", attachments.Select(t => t.fileName));
+                text += string.Format(attachments.Count > 1 
+                        ? Prompts.UseAttachedFiles 
+                        : Prompts.UseAttachedFile,
+                        fileNames);
+            }
             contentList.Add(new(text));
             contentList.AddRange(contents);
             await threadResponse.CreateMessageAsync(new Message(contentList, attachments: attachmentList.Select(t => t.attachment)))
@@ -122,6 +130,7 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
 
+        string assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot).ConfigureAwait(false);
         var attachmentList = new List<(Attachment attachment, string vectorStoreId)>();
         var contentList = new List<Content>();
         try
@@ -129,14 +138,21 @@ internal class Client : IOpenAiClient
             (List<Content> contents, List<(Attachment attachment, string vectorStoreId, string fileName)> attachments) = await GetContentAndAttachmentLists(attachmentUrls);
             
             attachmentList.AddRange(attachments.Select(t => (t.attachment, t.vectorStoreId)));
-            text += $"{Environment.NewLine}";
-            attachments.ForEach(t => text += $"{Environment.NewLine}Use: {t.fileName}");
+            foreach (var t in attachmentList) await AddVectorStoreIdToAssistantByIdAsync(assistantId, t.vectorStoreId);
+            if (attachments.Any())
+            {
+                text += $"{Environment.NewLine}{Environment.NewLine}";
+                string fileNames = string.Join(", ", attachments.Select(t => t.fileName));
+                text += string.Format(attachments.Count > 1 
+                        ? Prompts.UseAttachedFiles 
+                        : Prompts.UseAttachedFile,
+                    fileNames);
+            }
             contentList.Add(new(text));
             contentList.AddRange(contents);
 
             var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
                 { new Message(contentList, attachments: attachmentList.Select(t => t.attachment)) }, metadata: UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
-            var assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot, this).ConfigureAwait(false);
 
             return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
         }
@@ -339,6 +355,7 @@ internal class Client : IOpenAiClient
         using OpenAIClient client = new (Options.Value.ApiKey);
         return await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
     }
+    
     public async Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest)
     {
         try
@@ -357,17 +374,33 @@ internal class Client : IOpenAiClient
         }
     }
 
+    public async Task<AssistantResponse> ModifyAssistantResponseByIdAsync(string assistantId, CreateAssistantRequest assistantRequest)
+    {
+        using OpenAIClient client = new (Options.Value.ApiKey);
+        return await client.AssistantsEndpoint.ModifyAssistantAsync(assistantId, assistantRequest);
+    }
+
+    public async Task<AssistantResponse> AddVectorStoreIdToAssistantByIdAsync(string assistantId, string vectorStoreId)
+    {
+        using OpenAIClient client = new (Options.Value.ApiKey);
+        AssistantResponse assistant = await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
+        CodeInterpreterResources? newCodeInterpreterResources = assistant.ToolResources?.CodeInterpreter;
+        FileSearchResources newFileSearchResources = assistant.ToolResources?.FileSearch ?? new FileSearchResources();
+        ((List<string>)newFileSearchResources.VectorStoreIds).Add(vectorStoreId);
+        ToolResources toolResources = new (newFileSearchResources, newCodeInterpreterResources);
+        var assistantRequest = new CreateAssistantRequest(assistant, assistant.Model, assistant.Name, assistant.Description, assistant.Instructions, assistant.Tools, toolResources);
+        return await client.AssistantsEndpoint.ModifyAssistantAsync(assistantId, assistantRequest);
+    }
+    
     private async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumption(string textToBeEstimated, OpenAIClient client)
     {
         ThreadResponse? threadResponse = null;
         try
         {
             threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-                { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(_assistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
+            { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(_assistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
             Result<OpenAiResponse> result = await GetTextAnswer(threadResponse.Id, client, _assumptionAssistantId).ConfigureAwait(false);
-            
             if (!result.IsSuccess) return Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
-            
             return new OpenAiPilotAssumptionResponse(JsonConvert.DeserializeObject<PilotAssumptionContainer>(result.Value.Answer));
         }
         catch (Exception e)
