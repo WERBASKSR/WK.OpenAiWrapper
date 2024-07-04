@@ -16,10 +16,7 @@ using OpenAI.Files;
 using OpenAI.Images;
 using OpenAI.Models;
 using OpenAI.VectorStores;
-using Message = OpenAI.Threads.Message;
 using WK.OpenAiWrapper.Constants;
-using System.Reflection;
-using System.Xml.Linq;
 
 namespace WK.OpenAiWrapper;
 
@@ -74,41 +71,35 @@ internal class Client : IOpenAiClient
         var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId).ConfigureAwait(false);
         var user = threadResponse.Metadata.GetValueOrDefault("User");
         if (user == null) Result<OpenAiResponse>.Error("Field 'User' is missing in Metadata.");
-        string assistantId;
+        
+        AssistantResponse assistant;
 
         if (pilot != null)
         {
-            assistantId = await _assistantHandler.GetOrCreateAssistantId(user!, pilot).ConfigureAwait(false);
+            assistant = await _assistantHandler.GetOrCreateAssistantResponse(user!, pilot).ConfigureAwait(false);
         }
         else
         {
             ListResponse<RunResponse> lastRunResponses = await threadResponse.ListRunsAsync(new ListQuery(limit: 1)).ConfigureAwait(false);
             var id = lastRunResponses.Items.SingleOrDefault()?.AssistantId;
             if (id == null) return Result<OpenAiResponse>.Error($"No runs were found for the threadId {threadId}.");
-            assistantId = id;
+            assistant = await GetAssistantResponseByIdAsync(id).ConfigureAwait(false);
         }
         
-        var attachmentList = new List<(Attachment attachment, string vectorStoreId)>();
-        var contentList = new List<Content>();
+        var attachments = new List<Attachment>();
         try
         {
-            (List<Content>? contents, List<(Attachment attachment, string vectorStoreId, string fileName)>? attachments) = await GetContentAndAttachmentLists(attachmentUrls);
-            attachmentList.AddRange(attachments.Select(t => (t.attachment, t.vectorStoreId)));
-            foreach (var t in attachmentList) await AddVectorStoreIdToAssistantByIdAsync(assistantId, t.vectorStoreId);
-            if (attachments.Any())
+            var message = new Message(text);
+            if (attachmentUrls != null && attachmentUrls.Any())
             {
-                text += $"{Environment.NewLine}{Environment.NewLine}";
-                string fileNames = string.Join(", ", attachments.Select(t => t.fileName));
-                text += string.Format(attachments.Count > 1 
-                        ? Prompts.UseAttachedFiles 
-                        : Prompts.UseAttachedFile,
-                        fileNames);
+                (Message? messageWithAttachments, AssistantResponse newAssistant) = await GetMessageWithAttachment(text, attachmentUrls, assistant).ConfigureAwait(false);
+                message = messageWithAttachments;
+                assistant = newAssistant;
             }
-            contentList.Add(new(text));
-            contentList.AddRange(contents);
-            await threadResponse.CreateMessageAsync(new Message(contentList, attachments: attachmentList.Select(t => t.attachment)))
-                .ConfigureAwait(false);
-            return await GetTextAnswer(threadId, client, assistantId).ConfigureAwait(false);
+            attachments.AddRange(message.Attachments ?? []);
+            
+            await threadResponse.CreateMessageAsync(message).ConfigureAwait(false);
+            return await GetTextAnswer(threadId, client, assistant.Id).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -116,9 +107,10 @@ internal class Client : IOpenAiClient
         }
         finally
         {
-            if (deleteFilesAfterUse)
+            string? vectorStoreId = assistant.ToolResources?.FileSearch?.VectorStoreIds?.SingleOrDefault();
+            if (deleteFilesAfterUse && vectorStoreId != null)
             {
-                foreach ((Attachment attachment, string vectorStoreId) in attachmentList)
+                foreach (Attachment attachment in attachments)
                 {
                     await DeleteFileInVectorStoreById(attachment.FileId, vectorStoreId).ConfigureAwait(false);
                 } 
@@ -130,31 +122,27 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
 
-        string assistantId = await _assistantHandler.GetOrCreateAssistantId(user, pilot).ConfigureAwait(false);
-        var attachmentList = new List<(Attachment attachment, string vectorStoreId)>();
-        var contentList = new List<Content>();
+        var assistant = await _assistantHandler.GetOrCreateAssistantResponse(user, pilot).ConfigureAwait(false);
+        var attachments = new List<Attachment>();
         try
         {
-            (List<Content> contents, List<(Attachment attachment, string vectorStoreId, string fileName)> attachments) = await GetContentAndAttachmentLists(attachmentUrls);
-            
-            attachmentList.AddRange(attachments.Select(t => (t.attachment, t.vectorStoreId)));
-            foreach (var t in attachmentList) await AddVectorStoreIdToAssistantByIdAsync(assistantId, t.vectorStoreId);
-            if (attachments.Any())
+            var message = new Message(text);
+            if (attachmentUrls != null && attachmentUrls.Any())
             {
-                text += $"{Environment.NewLine}{Environment.NewLine}";
-                string fileNames = string.Join(", ", attachments.Select(t => t.fileName));
-                text += string.Format(attachments.Count > 1 
-                        ? Prompts.UseAttachedFiles 
-                        : Prompts.UseAttachedFile,
-                    fileNames);
+                (Message? messageWithAttachments, AssistantResponse newAssistant) = await GetMessageWithAttachment(text, attachmentUrls, assistant).ConfigureAwait(false);
+                message = messageWithAttachments;
+                assistant = newAssistant;
             }
-            contentList.Add(new(text));
-            contentList.AddRange(contents);
+            attachments.AddRange(message.Attachments ?? []);
+            
+            ToolResources toolResources = null;
+            if (attachments.Any()) 
+                toolResources = new ToolResources(
+                    new FileSearchResources(assistant.ToolResources.FileSearch.VectorStoreIds.Single()));
+            
+            var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest([message], toolResources, UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
 
-            var threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-                { new Message(contentList, attachments: attachmentList.Select(t => t.attachment)) }, metadata: UserHelper.GetDictionaryWithUser(user))).ConfigureAwait(false);
-
-            return await GetTextAnswer(threadResponse.Id, client, assistantId).ConfigureAwait(false);
+            return await GetTextAnswer(threadResponse.Id, client, assistant.Id).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -162,9 +150,10 @@ internal class Client : IOpenAiClient
         }
         finally
         {
-            if (deleteFilesAfterUse)
+            string? vectorStoreId = assistant.ToolResources?.FileSearch?.VectorStoreIds?.SingleOrDefault();
+            if (deleteFilesAfterUse && vectorStoreId != null)
             {
-                foreach ((Attachment attachment, string vectorStoreId) in attachmentList)
+                foreach (Attachment attachment in attachments)
                 {
                     await DeleteFileInVectorStoreById(attachment.FileId, vectorStoreId).ConfigureAwait(false);
                 } 
@@ -380,7 +369,7 @@ internal class Client : IOpenAiClient
         return await client.AssistantsEndpoint.ModifyAssistantAsync(assistantId, assistantRequest);
     }
 
-    public async Task<AssistantResponse> AddVectorStoreIdToAssistantByIdAsync(string assistantId, string vectorStoreId)
+    public async Task<AssistantResponse> ReplaceVectorStoreIdToAssistantByIdAsync(string assistantId, string vectorStoreId)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
         AssistantResponse assistant = await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
@@ -497,13 +486,32 @@ internal class Client : IOpenAiClient
             return Result<OpenAiSpeechResponse>.Error($"Get Speech failed: {exception.Message}");
         }
     }
-
-    private async Task<(List<Content> ContentList, List<(Attachment attachment, string vectorStoreId, string fileName)> AttachmentVectorStoreIdList)> GetContentAndAttachmentLists(IEnumerable<string>? attachmentUrls)
+    
+    private async Task<(Message, AssistantResponse)> GetMessageWithAttachment(string text, IEnumerable<string> attachmentUrls, AssistantResponse assistant)
+    {
+        string? vectorStoreId = assistant.ToolResources?.FileSearch?.VectorStoreIds?.SingleOrDefault();
+        (List<Content> contents, List<(Attachment attachment, string fileName)> attachments, string newVectorStoreId) 
+            = await GetContentAndAttachmentLists(attachmentUrls, vectorStoreId);
+            
+        if (vectorStoreId == null) assistant = await ReplaceVectorStoreIdToAssistantByIdAsync(assistant.Id, newVectorStoreId);
+        if (attachments.Any())
+        {
+            text += $"{Environment.NewLine}{Environment.NewLine}";
+            string fileNames = string.Join(", ", attachments.Select(t => t.fileName));
+            text += string.Format(attachments.Count > 1 
+                    ? Prompts.UseAttachedFiles 
+                    : Prompts.UseAttachedFile,
+                fileNames);
+        }
+        contents.Insert(0,new(text));
+        return (new Message(contents, attachments: attachments.Select(t => t.attachment)), assistant);
+    }
+    private async Task<(List<Content> contents, List<(Attachment attachment, string fileName)> attachments, string newVectorStoreId)> GetContentAndAttachmentLists(IEnumerable<string>? attachmentUrls, string? vectorStoreId)
     {
         var contentList = new List<Content>();
-        var attachmentList = new List<(Attachment attachment, string vectorStoreId, string fileName)>();
+        var attachmentList = new List<(Attachment attachment, string fileName)>();
 
-        if (attachmentUrls == null) return (contentList, attachmentList);
+        if (attachmentUrls == null) return (contentList, attachmentList, vectorStoreId);
         
         IEnumerable<string> imageUrls = attachmentUrls.Where(s => Regex.IsMatch(s,
             @"^https?:\/\/[\w.-]+\/[\w.-]*\.(?:gif|jpg|jpeg|png|bmp)$",
@@ -511,22 +519,29 @@ internal class Client : IOpenAiClient
         imageUrls.ForEach(u => contentList.Add(new Content(ContentType.ImageUrl, u)));
         IEnumerable<string> notImageAttachments = attachmentUrls.Except(imageUrls);
         
-        if (!notImageAttachments.Any()) return (contentList, attachmentList);
+        if (!notImageAttachments.Any()) return (contentList, attachmentList, vectorStoreId);
         
         using var httpClient = new HttpClient();
         foreach (string notImageAttachment in notImageAttachments)
         {
             var uri = new Uri(notImageAttachment);
             string fileName = uri.Segments.Last();
-            Result<OpenAiVectorStoreResponse> fileResponseResult = await UploadStreamToNewVectorStore(
-                await httpClient.GetStreamAsync(uri),
-                fileName,
-                $"temp_{Guid.NewGuid()}",
-                true).ConfigureAwait(false);
+            Result<OpenAiVectorStoreResponse> fileResponseResult = vectorStoreId != null
+                ? await UploadStreamToVectorStore(
+                    await httpClient.GetStreamAsync(uri),
+                    fileName,
+                    vectorStoreId,
+                    true).ConfigureAwait(false)
+                : await UploadStreamToNewVectorStore(
+                    await httpClient.GetStreamAsync(uri),
+                    fileName,
+                    $"temp_{Guid.NewGuid()}",
+                    true).ConfigureAwait(false);
             if (!fileResponseResult.IsSuccess) throw new Exception(string.Join(';', fileResponseResult.Errors));
-            attachmentList.Add((new Attachment(fileResponseResult.Value.FileId, Tool.FileSearch), fileResponseResult.Value.VectorStoreId, fileName));
+            vectorStoreId = fileResponseResult.Value.VectorStoreId;
+            attachmentList.Add((new Attachment(fileResponseResult.Value.FileId, Tool.FileSearch), fileName));
         }
 
-        return (contentList, attachmentList);
+        return (contentList, attachmentList, vectorStoreId);
     }
 }

@@ -352,7 +352,7 @@ public class ClientTests
             "Erstelle eine sehr kurze Zusammenfassung in einem kurzen Absatz.",
             "Master",
             user,
-            ["http://domainname.de/ai_example.txt"]
+            ["http://efpefau.de/ai_example.txt"]
         );
 
         //Assert
