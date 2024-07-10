@@ -64,8 +64,7 @@ jobs:
         run: |
           dotnet nuget push *.nupkg \
             --api-key ${{ secrets.NUGETTOKEN1 }} \
-            --source "https://api.nuget.org/v3/index.json" \
-            --suffix "dev-${{ github.run_number }}"
+            --source "https://api.nuget.org/v3/index.json"
   
   release-main:
     runs-on: ubuntu-latest
