@@ -32,7 +32,7 @@ internal class AssumptionService(string assumptionAssistantId)
         try
         {
             threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-                { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(Client.Instance.Options.Value.AssistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
+                { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(Client.Instance.AssistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
             Result<OpenAiResponse> result = await Client.Instance.GetTextAnswer(threadResponse.Id, client, assumptionAssistantId).ConfigureAwait(false);
             if (!result.IsSuccess) return Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
             return new OpenAiPilotAssumptionResponse(JsonConvert.DeserializeObject<PilotAssumptionContainer>(result.Value.Answer));

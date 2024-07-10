@@ -2,7 +2,7 @@
 using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Interfaces;
-public interface IOpenAiClientConfig
+public interface IOpenAiPilotConfig
 {
     /// <summary>
     /// Retrieves a Pilot by their name.

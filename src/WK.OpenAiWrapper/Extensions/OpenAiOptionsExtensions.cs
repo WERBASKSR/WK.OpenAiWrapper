@@ -20,23 +20,24 @@ internal static class OpenAiOptionsExtensions
     
     internal static async Task<Pilot?> DeletePilotAsync(this OpenAiOptions options, string pilotName)
     {
+        Client client = Client.Instance;
         Pilot? pilot = options.GetPilot(pilotName);
         if (pilot == null) return pilot;
         
         options.Pilots.Remove(pilot);
-        if (options.AssistantHandler == null) return pilot;
+        if (client.AssistantHandler == null) return pilot;
         
-        var toDeleteAssistants = options.AssistantHandler.Assistants.Where(a => a.Value.Pilot == pilot)
+        var toDeleteAssistants = client.AssistantHandler.Assistants.Where(a => a.Value.Pilot == pilot)
             .Select(p => p.Value).ToList();
-        toDeleteAssistants.ForEach(options.AssistantHandler.Assistants.RemoveValues);
+        toDeleteAssistants.ForEach(client.AssistantHandler.Assistants.RemoveValues);
 
         foreach (var toDeleteAssistant in toDeleteAssistants)
         {
-            var assistantId = await options.AssistantHandler
+            var assistantId = await client.AssistantHandler
                 .GetOrCreateAssistantId(toDeleteAssistant.User, toDeleteAssistant.Pilot.Name)
                 .ConfigureAwait(false);
-            await Client.Instance.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
-            options.AssistantHandler.AssistantIds.RemoveValues(assistantId);
+            await client.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
+            client.AssistantHandler.AssistantIds.RemoveValues(assistantId);
         }
 
         return pilot;
@@ -51,17 +52,19 @@ internal static class OpenAiOptionsExtensions
     
     internal static async Task<Pilot?> ModifyAssistantAsync(this OpenAiOptions options, string pilotName, string userName)
     {
+        Client client = Client.Instance;
+
         Pilot? pilot = options.GetPilot(pilotName);
         if (pilot == null) return pilot;
         
         pilot.TransferToolBuildersToTools();
         pilot.CreateToolResources();
         
-        string assistantId = await options.AssistantHandler.GetOrCreateAssistantId(userName, pilotName);
-        var assistant = options.AssistantHandler.GetCreateAssistant(userName, pilotName);
+        string assistantId = await client.AssistantHandler.GetOrCreateAssistantId(userName, pilotName);
+        var assistant = client.AssistantHandler.GetCreateAssistant(userName, pilotName);
         assistant._createAssistantRequest = null;
 
-        await Client.Instance.ModifyAssistantResponseByIdAsync(assistantId, assistant.CreateAssistantRequest);
+        await client.ModifyAssistantResponseByIdAsync(assistantId, assistant.CreateAssistantRequest);
 
         return pilot;
     }

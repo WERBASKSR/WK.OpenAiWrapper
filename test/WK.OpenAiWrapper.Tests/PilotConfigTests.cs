@@ -10,7 +10,7 @@ using Xunit;
 
 namespace WK.OpenAiWrapper.Tests;
 
-public class ClientConfigTests
+public class PilotConfigTests
 {
     
     [Fact]
@@ -46,7 +46,7 @@ public class ClientConfigTests
         
         serviceCollection.RegisterOpenAi(config);
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
-        var clientConfig = buildServiceProvider.GetService<IOpenAiClientConfig>() as ClientConfig;
+        var clientConfig = buildServiceProvider.GetService<IOpenAiPilotConfig>() as PilotConfig;
         var client = buildServiceProvider.GetService<IOpenAiClient>() as Client;
 
         //Act

@@ -18,18 +18,18 @@ namespace WK.OpenAiWrapper;
 
 internal partial class Client : IOpenAiClient
 {
-    internal readonly IOptions<OpenAiOptions> Options;
-    private readonly AssistantHandler _assistantHandler;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     internal static Client Instance;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
+    internal readonly IOptions<OpenAiOptions> Options;
+    internal readonly AssistantHandler AssistantHandler;
 
     public Client(IOptions<OpenAiOptions> options)
     {
         Options = options;
         
-        _assistantHandler = new(options);
-        Options.Value.AssistantHandler = _assistantHandler;
+        AssistantHandler = new(options);
         
         using OpenAIClient client = new (Options.Value.ApiKey);
         var assumptionAssistantId = client.GetAssumptionAssistant().GetAwaiter().GetResult()?.Id ?? 
@@ -75,7 +75,7 @@ internal partial class Client : IOpenAiClient
 
         if (pilot != null)
         {
-            assistant = await _assistantHandler.GetOrCreateAssistantResponse(user!, pilot).ConfigureAwait(false);
+            assistant = await AssistantHandler.GetOrCreateAssistantResponse(user!, pilot).ConfigureAwait(false);
         }
         else
         {
@@ -121,7 +121,7 @@ internal partial class Client : IOpenAiClient
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
 
-        var assistant = await _assistantHandler.GetOrCreateAssistantResponse(user, pilot).ConfigureAwait(false);
+        var assistant = await AssistantHandler.GetOrCreateAssistantResponse(user, pilot).ConfigureAwait(false);
         var attachments = new List<Attachment>();
         try
         {
@@ -160,46 +160,10 @@ internal partial class Client : IOpenAiClient
         }
     }
 
-    public async Task<bool> DeleteAssistantAsync(string assistantId)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await client.AssistantsEndpoint.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
-    }
-
-    public async Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
-    }
-    
-    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest)
-    {
-        try
-        {
-            using OpenAIClient client = new (Options.Value.ApiKey);
-
-            ListResponse<AssistantResponse> assistantsResponse = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
-            var assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == assistantName)
-                                    ?? await client.AssistantsEndpoint.CreateAssistantAsync(assistantRequest).ConfigureAwait(false);
-            return assistantResponse;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-    }
-
-    public async Task<AssistantResponse> ModifyAssistantResponseByIdAsync(string assistantId, CreateAssistantRequest assistantRequest)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await client.AssistantsEndpoint.ModifyAssistantAsync(assistantId, assistantRequest);
-    }
-    
     internal async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
     {
         var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId))
-            .WaitForDone(_assistantHandler).ConfigureAwait(false);
+            .WaitForDone(AssistantHandler).ConfigureAwait(false);
 
         if (runResponse.Status != RunStatus.Completed)
             return Result<OpenAiResponse>.Error(

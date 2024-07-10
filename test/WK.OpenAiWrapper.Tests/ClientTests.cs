@@ -146,7 +146,7 @@ public class ClientTests
         var text = "What is the weather like in Paris?";
         
         //Act
-        var result = await client.GetOpenAiPilotAssumptionWithConversationResponse(text, "thread_CYpL8a4ECD1V9lT53rpnkY9R");
+        var result = await client.GetOpenAiPilotAssumptionWithConversationResponse(text, "thread_9kgMRZaCjfGEBQHDQN0sEzHl");
         
             //Assert Arrange
             int weatherPercentage = result.Value.PilotAssumptionContainer.PilotAssumptions.Single(p => p.PilotName == "Weather")

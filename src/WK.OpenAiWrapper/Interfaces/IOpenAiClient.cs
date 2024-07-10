@@ -1,10 +1,9 @@
 ﻿using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models;
-using OpenAI.Assistants;
 
 namespace WK.OpenAiWrapper.Interfaces;
 
-public interface IOpenAiClient : IOpenAiFileClient, IOpenAiSummaryClient, IOpenAiAssumptionClient
+public interface IOpenAiClient : IOpenAiFileClient, IOpenAiSummaryClient, IOpenAiAssumptionClient, IOpenAiAssistantClient
 { 
     /// <summary>
     /// Gets an OpenAI response within an existing thread.
@@ -86,9 +85,4 @@ public interface IOpenAiClient : IOpenAiFileClient, IOpenAiSummaryClient, IOpenA
     ///     If `text` is empty or null.
     /// </exception>
     Task<Result<OpenAiSpeechResponse>> GetOpenAiSpeechResponse(string text);
-    
-    internal Task<bool> DeleteAssistantAsync(string assistantId);
-    internal Task<AssistantResponse> ModifyAssistantResponseByIdAsync(string assistantId, CreateAssistantRequest assistantRequest);
-    internal Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId);
-    internal Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest);
 }

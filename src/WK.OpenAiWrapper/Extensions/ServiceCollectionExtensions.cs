@@ -55,6 +55,6 @@ public static class ServiceCollectionExtensions
     {
         serviceCollection.AddScoped(p => new OpenAIClient(new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
         serviceCollection.AddSingleton<IOpenAiClient, Client>();
-        serviceCollection.AddSingleton<IOpenAiClientConfig, ClientConfig>();
+        serviceCollection.AddSingleton<IOpenAiPilotConfig, PilotConfig>();
     }
 }
