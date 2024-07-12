@@ -3,7 +3,7 @@ using WK.OpenAiWrapper.Models;
 
 namespace WK.OpenAiWrapper.Interfaces;
 
-public interface IOpenAiClient : IOpenAiFileClient, IOpenAiSummaryClient, IOpenAiAssumptionClient, IOpenAiAssistantClient
+public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOpenAiAssumptionClient, IOpenAiAssistantClient
 { 
     /// <summary>
     /// Gets an OpenAI response within an existing thread.

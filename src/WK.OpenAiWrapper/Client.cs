@@ -40,7 +40,9 @@ internal partial class Client : IOpenAiClient
                                 throw new ArgumentNullException($"The SummaryAssistant could not be retrieved or created.");
         SummaryService = new SummaryService(summaryAssistantId);
         
-        FileService = new FileService();
+        StorageService = new StorageService();
+
+        AssistantService = new AssistantService();
         
         Instance = this;
     }
@@ -225,9 +227,9 @@ internal partial class Client : IOpenAiClient
     {
         string? vectorStoreId = assistant.ToolResources?.FileSearch?.VectorStoreIds?.SingleOrDefault();
         (List<Content> contents, List<(Attachment attachment, string fileName)> attachments, string newVectorStoreId) 
-            = await FileService.GetContentAndAttachmentLists(attachmentUrls, vectorStoreId);
+            = await StorageService.GetContentAndAttachmentLists(attachmentUrls, vectorStoreId);
             
-        if (vectorStoreId == null) assistant = await FileService.ReplaceVectorStoreIdToAssistantByIdAsync(assistant.Id, newVectorStoreId);
+        if (vectorStoreId == null) assistant = await AssistantService.ReplaceVectorStoreIdToAssistantByIdAsync(assistant.Id, newVectorStoreId);
         if (attachments.Any())
         {
             text += $"{Environment.NewLine}{Environment.NewLine}";

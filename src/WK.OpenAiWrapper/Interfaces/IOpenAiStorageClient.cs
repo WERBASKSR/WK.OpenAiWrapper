@@ -1,8 +1,10 @@
 ﻿using OpenAI.VectorStores;
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models;
+
 namespace WK.OpenAiWrapper.Interfaces;
-public interface IOpenAiFileClient
+
+public interface IOpenAiStorageClient
 { 
     /// <summary>
     /// Uploads a file stream to an existing vector store.

@@ -1,5 +1,4 @@
 ﻿using OpenAI;
-using OpenAI.Assistants;
 using OpenAI.Files;
 using OpenAI.VectorStores;
 using System.Text.RegularExpressions;
@@ -11,14 +10,14 @@ using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Services;
 
-internal class FileService
+internal class StorageService
 {
     public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(string[] filePaths, string vectorStoreName, bool waitForDoneStatus = false)
     {
         try
         {
             using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
-            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
+            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName, expiresAfter: 360)).ConfigureAwait(false);
             return await UploadToVectorStore(filePaths, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
         }
         catch (Exception e)
@@ -91,7 +90,7 @@ internal class FileService
         try
         {
             using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
-            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
+            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName, expiresAfter: 360)).ConfigureAwait(false);
             return await UploadStreamToVectorStore(fileStream, fileName, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
         }
         catch (Exception e)
@@ -159,17 +158,6 @@ internal class FileService
     {
         using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
         return await client.VectorStoresEndpoint.GetVectorStoreFileAsync(vectorStoreId, fileId).ConfigureAwait(false);
-    }
-    public async Task<AssistantResponse> ReplaceVectorStoreIdToAssistantByIdAsync(string assistantId, string vectorStoreId)
-    {
-        using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
-        AssistantResponse assistant = await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
-        CodeInterpreterResources? newCodeInterpreterResources = assistant.ToolResources?.CodeInterpreter;
-        FileSearchResources newFileSearchResources = assistant.ToolResources?.FileSearch ?? new FileSearchResources();
-        ((List<string>)newFileSearchResources.VectorStoreIds).Add(vectorStoreId);
-        ToolResources toolResources = new (newFileSearchResources, newCodeInterpreterResources);
-        var assistantRequest = new CreateAssistantRequest(assistant, assistant.Model, assistant.Name, assistant.Description, assistant.Instructions, assistant.Tools, toolResources);
-        return await client.AssistantsEndpoint.ModifyAssistantAsync(assistantId, assistantRequest);
     }
     
     internal async Task<(List<Content> contents, List<(Attachment attachment, string fileName)> attachments, string newVectorStoreId)> GetContentAndAttachmentLists(IEnumerable<string>? attachmentUrls, string? vectorStoreId)
