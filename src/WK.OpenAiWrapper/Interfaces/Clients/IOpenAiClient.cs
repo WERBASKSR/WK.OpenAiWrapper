@@ -1,10 +1,10 @@
 ﻿using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models;
 
-namespace WK.OpenAiWrapper.Interfaces;
+namespace WK.OpenAiWrapper.Interfaces.Clients;
 
 public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOpenAiAssumptionClient, IOpenAiAssistantClient
-{ 
+{
     /// <summary>
     /// Gets an OpenAI response within an existing thread.
     /// </summary>
@@ -73,7 +73,7 @@ public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOp
     ///     If `audio` is null.
     /// </exception>
     Task<Result<OpenAiAudioResponse>> GetOpenAiAudioResponse(string audioFilePath);
-    
+
     /// <summary>
     ///     Gets an OpenAI speech response.
     /// </summary>

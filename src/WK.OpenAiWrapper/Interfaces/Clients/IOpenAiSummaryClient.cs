@@ -1,9 +1,9 @@
 ﻿using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models;
 
-namespace WK.OpenAiWrapper.Interfaces;
+namespace WK.OpenAiWrapper.Interfaces.Clients;
 public interface IOpenAiSummaryClient
-{ 
+{
     /// <summary>
     ///     Gets a summary of the current conversation between the OpenAI service and the specified threadId.
     /// </summary>

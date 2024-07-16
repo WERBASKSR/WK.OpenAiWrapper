@@ -1,23 +1,23 @@
 ﻿using OpenAI.Assistants;
-using WK.OpenAiWrapper.Services;
+using WK.OpenAiWrapper.Interfaces.Services;
 
 namespace WK.OpenAiWrapper;
 
 internal partial class Client
 {
-    internal readonly AssistantService AssistantService;
+    internal readonly IAssistantService AssistantService;
 
-    public async Task<bool> DeleteAssistantAsync(string assistantId) 
-        => await AssistantService.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
+    public Task<bool> DeleteAssistantAsync(string assistantId) 
+        => AssistantService.DeleteAssistantAsync(assistantId);
 
-    public async Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId) 
-        => await AssistantService.GetAssistantResponseByIdAsync(assistantId).ConfigureAwait(false);
+    public Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId) 
+        => AssistantService.GetAssistantResponseByIdAsync(assistantId);
 
-    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest)
-        => await AssistantService.GetOrCreateAssistantResponse(assistantName, assistantRequest).ConfigureAwait(false);
+    public Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest)
+        => AssistantService.GetOrCreateAssistantResponse(assistantName, assistantRequest);
 
 
-    public async Task<AssistantResponse> ModifyAssistantResponseByIdAsync(string assistantId, CreateAssistantRequest assistantRequest)
-        => await AssistantService.ModifyAssistantResponseByIdAsync(assistantId, assistantRequest).ConfigureAwait(false);
+    public Task<AssistantResponse> ModifyAssistantResponseByIdAsync(string assistantId, CreateAssistantRequest assistantRequest)
+        => AssistantService.ModifyAssistantResponseByIdAsync(assistantId, assistantRequest);
 
 }

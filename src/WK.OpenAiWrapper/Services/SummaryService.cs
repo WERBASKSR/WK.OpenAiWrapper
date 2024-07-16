@@ -1,11 +1,12 @@
 ﻿using OpenAI;
 using OpenAI.Threads;
+using WK.OpenAiWrapper.Interfaces.Services;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Services;
 
-internal class SummaryService(string summaryAssistantId)
+internal class SummaryService(string summaryAssistantId) : ISummaryService
 {
     public async Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10)
     {
@@ -13,7 +14,7 @@ internal class SummaryService(string summaryAssistantId)
         return await GetConversationSummary(threadId, client, messageCount).ConfigureAwait(false);
     }
         
-    internal async Task<Result<OpenAiResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount)
+    public async Task<Result<OpenAiResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount)
     {
         ThreadResponse? threadResponse = null;
         try

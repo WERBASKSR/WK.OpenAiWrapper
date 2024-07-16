@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Interfaces;
+using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
 using Xunit;

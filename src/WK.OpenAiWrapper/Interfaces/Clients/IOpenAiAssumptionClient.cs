@@ -1,9 +1,9 @@
 ﻿using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models;
 
-namespace WK.OpenAiWrapper.Interfaces;
+namespace WK.OpenAiWrapper.Interfaces.Clients;
 public interface IOpenAiAssumptionClient
-{ 
+{
     /// <summary>
     ///     Gets an OpenAI Pilot Assumption Response.
     /// </summary>
@@ -24,7 +24,7 @@ public interface IOpenAiAssumptionClient
     ///     If an error occurs during deserialization, it returns a `Result` object containing the error message.
     /// </remarks>
     Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeEstimated);
-    
+
     /// <summary>
     ///     Gets an OpenAI Pilot Assumption Response within an existing thread.
     /// </summary>

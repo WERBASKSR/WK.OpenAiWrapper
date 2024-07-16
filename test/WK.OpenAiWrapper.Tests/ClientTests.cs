@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using OpenAI;
 using WK.OpenAiWrapper.Extensions;
-using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
 using Xunit;
+using WK.OpenAiWrapper.Interfaces.Clients;
 
 namespace WK.OpenAiWrapper.Tests;
 

@@ -2,10 +2,10 @@
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models;
 
-namespace WK.OpenAiWrapper.Interfaces;
+namespace WK.OpenAiWrapper.Interfaces.Clients;
 
 public interface IOpenAiStorageClient
-{ 
+{
     /// <summary>
     /// Uploads a file stream to an existing vector store.
     /// </summary>
@@ -20,7 +20,7 @@ public interface IOpenAiStorageClient
     /// If `fileStream`, `fileName`, or `vectorStoreId` is empty or null.
     /// </exception>
     Task<Result<OpenAiVectorStoreResponse>> UploadStreamToVectorStore(Stream fileStream, string fileName, string vectorStoreId, bool waitForDoneStatus = false);
-    
+
     /// <summary>
     /// Uploads files to a new vector store.
     /// </summary>
@@ -105,7 +105,7 @@ public interface IOpenAiStorageClient
     /// If `fileName` or `vectorStoreId` is empty or null.
     /// </exception>
     Task<Result<OpenAiVectorStoreResponse>> DeleteFileInVectorStoreByName(string fileName, string vectorStoreId);
-    
+
     /// <summary>
     /// Deletes a file in a vector store by its ID.
     /// </summary>

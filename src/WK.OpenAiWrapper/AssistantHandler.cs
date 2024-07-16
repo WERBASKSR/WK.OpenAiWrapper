@@ -8,10 +8,10 @@ using WK.OpenAiWrapper.Options;
 
 namespace WK.OpenAiWrapper;
 
-internal class AssistantHandler(IOptions<OpenAiOptions> options)
+internal class AssistantHandler(IOptions<OpenAiOptions> options) : IAssistantHandler
 {
-    internal readonly ThreadingDictionary<string, string?> AssistantIds = new();
-    internal readonly ThreadingDictionary<string, Assistant> Assistants = new();
+    public ThreadingDictionary<string, string?> AssistantIds { get; } = new();
+    public ThreadingDictionary<string, Assistant> Assistants { get; } = new();
     private readonly Lazy<HashSet<PilotDescription>> _pilotDescriptions = new(() => options.Value.Pilots.Select(p => p.ToPilotDescription()).ToHashSet());
     public HashSet<PilotDescription> PilotDescriptions => _pilotDescriptions.Value;
     

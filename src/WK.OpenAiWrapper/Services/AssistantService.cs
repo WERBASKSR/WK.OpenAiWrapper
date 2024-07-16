@@ -1,9 +1,10 @@
 ﻿using OpenAI;
 using OpenAI.Assistants;
+using WK.OpenAiWrapper.Interfaces.Services;
 
 namespace WK.OpenAiWrapper.Services;
 
-internal class AssistantService
+internal class AssistantService : IAssistantService
 {
     public async Task<bool> DeleteAssistantAsync(string assistantId)
     {
@@ -19,20 +20,12 @@ internal class AssistantService
     
     public async Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest)
     {
-        try
-        {
-            using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
+        using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
 
-            ListResponse<AssistantResponse> assistantsResponse = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
-            var assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == assistantName)
-                                    ?? await client.AssistantsEndpoint.CreateAssistantAsync(assistantRequest).ConfigureAwait(false);
-            return assistantResponse;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        ListResponse<AssistantResponse> assistantsResponse = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
+        var assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == assistantName)
+                                ?? await client.AssistantsEndpoint.CreateAssistantAsync(assistantRequest).ConfigureAwait(false);
+        return assistantResponse;
     }
 
     public async Task<AssistantResponse> ModifyAssistantResponseByIdAsync(string assistantId, CreateAssistantRequest assistantRequest)

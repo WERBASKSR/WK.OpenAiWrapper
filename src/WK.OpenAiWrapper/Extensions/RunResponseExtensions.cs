@@ -1,17 +1,18 @@
 ﻿using OpenAI.Assistants;
 using OpenAI.Threads;
+using WK.OpenAiWrapper.Interfaces;
 
 namespace WK.OpenAiWrapper.Extensions;
 
 internal static class RunResponseExtensions
 {
-    internal static async Task<RunResponse> WaitForDone(this Task<RunResponse> runResponseTask, AssistantHandler assistantHandler)
+    internal static async Task<RunResponse> WaitForDone(this Task<RunResponse> runResponseTask, IAssistantHandler assistantHandler)
     {
         var runResponse = await runResponseTask.ConfigureAwait(false);
         return await WaitForDone(runResponse, assistantHandler).ConfigureAwait(false);
     }
 
-    internal static async Task<RunResponse> WaitForDone(this RunResponse runResponse, AssistantHandler assistantHandler)
+    internal static async Task<RunResponse> WaitForDone(this RunResponse runResponse, IAssistantHandler assistantHandler)
     {
         runResponse = await runResponse.WaitForStatusChangeAsync(timeout: 120).ConfigureAwait(false);
         switch (runResponse.Status)

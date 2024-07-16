@@ -7,10 +7,11 @@ using OpenAI.Threads;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
+using WK.OpenAiWrapper.Interfaces.Services;
 
 namespace WK.OpenAiWrapper.Services;
 
-internal class StorageService
+internal class StorageService : IStorageService
 {
     public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(string[] filePaths, string vectorStoreName, bool waitForDoneStatus = false)
     {
@@ -160,7 +161,7 @@ internal class StorageService
         return await client.VectorStoresEndpoint.GetVectorStoreFileAsync(vectorStoreId, fileId).ConfigureAwait(false);
     }
     
-    internal async Task<(List<Content> contents, List<(Attachment attachment, string fileName)> attachments, string newVectorStoreId)> GetContentAndAttachmentLists(IEnumerable<string>? attachmentUrls, string? vectorStoreId)
+    public async Task<(List<Content> contents, List<(Attachment attachment, string fileName)> attachments, string newVectorStoreId)> GetContentAndAttachmentLists(IEnumerable<string>? attachmentUrls, string? vectorStoreId)
     {
         var contentList = new List<Content>();
         var attachmentList = new List<(Attachment attachment, string fileName)>();

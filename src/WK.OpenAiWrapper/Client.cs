@@ -2,7 +2,6 @@
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Models;
-using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Options;
 using WK.OpenAiWrapper.Constants;
 using WK.OpenAiWrapper.Services;
@@ -13,6 +12,9 @@ using OpenAI.Assistants;
 using OpenAI.Audio;
 using OpenAI.Images;
 using OpenAI.Models;
+using WK.OpenAiWrapper.Interfaces;
+using WK.OpenAiWrapper.Interfaces.Clients;
+using WK.OpenAiWrapper.Interfaces.Services;
 
 namespace WK.OpenAiWrapper;
 
@@ -23,27 +25,16 @@ internal partial class Client : IOpenAiClient
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
     internal readonly IOptions<OpenAiOptions> Options;
-    internal readonly AssistantHandler AssistantHandler;
+    internal readonly IAssistantHandler AssistantHandler;
 
-    public Client(IOptions<OpenAiOptions> options)
+    public Client(IOptions<OpenAiOptions> options, IAssumptionService assumptionService, IStorageService storageService, ISummaryService summaryService, IAssistantService assistantService, IAssistantHandler assistantHandler)
     {
         Options = options;
-        
-        AssistantHandler = new(options);
-        
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        var assumptionAssistantId = client.GetAssumptionAssistant().GetAwaiter().GetResult()?.Id ?? 
-                                    throw new ArgumentNullException($"The AssumptionAssistant could not be retrieved or created.");
-        AssumptionService = new AssumptionService(assumptionAssistantId);
-        
-        var summaryAssistantId = client.GetSummaryAssistant().GetAwaiter().GetResult()?.Id ??
-                                throw new ArgumentNullException($"The SummaryAssistant could not be retrieved or created.");
-        SummaryService = new SummaryService(summaryAssistantId);
-        
-        StorageService = new StorageService();
-
-        AssistantService = new AssistantService();
-        
+        AssistantHandler = assistantHandler;
+        AssistantService = assistantService;
+        SummaryService = summaryService;
+        StorageService = storageService;
+        AssumptionService = assumptionService;
         Instance = this;
     }
 

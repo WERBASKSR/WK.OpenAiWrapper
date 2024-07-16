@@ -20,8 +20,8 @@ internal static class OpenAiOptionsExtensions
     
     internal static async Task<Pilot?> DeletePilotAsync(this OpenAiOptions options, string pilotName)
     {
-        Client client = Client.Instance;
-        Pilot? pilot = options.GetPilot(pilotName);
+        var client = Client.Instance;
+        var pilot = options.GetPilot(pilotName);
         if (pilot == null) return pilot;
         
         options.Pilots.Remove(pilot);
@@ -52,15 +52,14 @@ internal static class OpenAiOptionsExtensions
     
     internal static async Task<Pilot?> ModifyAssistantAsync(this OpenAiOptions options, string pilotName, string userName)
     {
-        Client client = Client.Instance;
-
-        Pilot? pilot = options.GetPilot(pilotName);
+        var client = Client.Instance;
+        var pilot = options.GetPilot(pilotName);
         if (pilot == null) return pilot;
         
         pilot.TransferToolBuildersToTools();
         pilot.CreateToolResources();
         
-        string assistantId = await client.AssistantHandler.GetOrCreateAssistantId(userName, pilotName);
+        var assistantId = await client.AssistantHandler.GetOrCreateAssistantId(userName, pilotName);
         var assistant = client.AssistantHandler.GetCreateAssistant(userName, pilotName);
         assistant._createAssistantRequest = null;
 

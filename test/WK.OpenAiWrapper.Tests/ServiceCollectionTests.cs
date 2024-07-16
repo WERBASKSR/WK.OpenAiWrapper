@@ -2,11 +2,9 @@
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
-using OpenAI;
 using WK.OpenAiWrapper.Extensions;
-using WK.OpenAiWrapper.Interfaces;
+using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Models;
-using WK.OpenAiWrapper.Result;
 using Xunit;
 
 namespace WK.OpenAiWrapper.Tests;
