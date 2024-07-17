@@ -68,7 +68,7 @@ public static class ServiceCollectionExtensions
         serviceCollection.AddScoped<IAssumptionService, AssumptionService>(p => GetAssumptionService(p).GetAwaiter().GetResult());
         serviceCollection.AddScoped<ISummaryService, SummaryService>(p => GetSummaryService(p).GetAwaiter().GetResult());
         serviceCollection.AddScoped<IStorageService, StorageService>();
-        serviceCollection.AddScoped<AssistantService, AssistantService>();
+        serviceCollection.AddScoped<IAssistantService, AssistantService>();
     }
 
     private static async Task<AssumptionService> GetAssumptionService(IServiceProvider serviceProvider)
