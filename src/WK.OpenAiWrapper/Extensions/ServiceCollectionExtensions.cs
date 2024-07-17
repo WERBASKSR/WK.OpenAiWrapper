@@ -58,7 +58,7 @@ public static class ServiceCollectionExtensions
     
     private static void RegisterOpenAiClient(IServiceCollection serviceCollection)
     {
-        serviceCollection.AddScoped(p => new OpenAIClient(new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
+        serviceCollection.AddTransient(p => new OpenAIClient(new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
         serviceCollection.AddScoped<IAssistantHandler>(p => new AssistantHandler(p.GetRequiredService<IOptions<OpenAiOptions>>()));
         serviceCollection.AddSingleton<IOpenAiClient, Client>();
         serviceCollection.AddSingleton<IOpenAiPilotConfig, PilotConfig>();
@@ -83,7 +83,7 @@ public static class ServiceCollectionExtensions
     {
         using OpenAIClient client = serviceProvider.GetRequiredService<OpenAIClient>();
         var summaryAssistantId = await client.GetSummaryAssistant().ConfigureAwait(false) ?? 
-                                 throw new ArgumentNullException($"The SummaryAssistant could not be retrieved or created.");
+                                  throw new ArgumentNullException($"The SummaryAssistant could not be retrieved or created.");
         return new SummaryService(summaryAssistantId);
     }
 }
