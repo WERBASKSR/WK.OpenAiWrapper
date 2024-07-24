@@ -6,7 +6,6 @@ namespace WK.OpenAiWrapper.Options;
 public class OpenAiOptions
 {
     internal const string SectionName = "OpenAi";
-    internal AssistantHandler? AssistantHandler;
     
     [Required(AllowEmptyStrings = false)]
     public string ApiKey { get; set; } = string.Empty;

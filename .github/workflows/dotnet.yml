@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   build:
@@ -48,8 +48,25 @@ jobs:
         with:
           name: nugetPackage
           path: artifacts/package/release/
+
+  release-dev:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: Download nuget package artifact
+        uses: actions/download-artifact@v2.1.1
+        with:
+          name: nugetPackage
+      
+      - name: Push prerelease package to Nuget.org
+        run: |
+          dotnet nuget push *.nupkg \
+            --api-key ${{ secrets.NUGETTOKEN1 }} \
+            --source "https://api.nuget.org/v3/index.json"
   
-  release:
+  release-main:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' # only run job if on the main branch   

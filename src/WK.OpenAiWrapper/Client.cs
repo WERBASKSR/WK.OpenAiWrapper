@@ -1,48 +1,40 @@
-﻿using System.Text.RegularExpressions;
-using OpenAI;
-using OpenAI.Threads;
-using WK.OpenAiWrapper.Extensions;
+﻿using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Models;
-using WK.OpenAiWrapper.Interfaces;
-using Microsoft.Extensions.Options;
-using MoreLinq;
-using Newtonsoft.Json;
 using WK.OpenAiWrapper.Options;
+using WK.OpenAiWrapper.Constants;
+using WK.OpenAiWrapper.Services;
+using Microsoft.Extensions.Options;
+using OpenAI;
+using OpenAI.Threads;
 using OpenAI.Assistants;
 using OpenAI.Audio;
-using OpenAI.Files;
 using OpenAI.Images;
 using OpenAI.Models;
-using OpenAI.VectorStores;
-using WK.OpenAiWrapper.Constants;
+using WK.OpenAiWrapper.Interfaces;
+using WK.OpenAiWrapper.Interfaces.Clients;
+using WK.OpenAiWrapper.Interfaces.Services;
 
 namespace WK.OpenAiWrapper;
 
-internal class Client : IOpenAiClient
+internal partial class Client : IOpenAiClient
 {
-    private readonly string _summaryAssistantId;
-    private readonly string _assumptionAssistantId;
-    internal readonly IOptions<OpenAiOptions> Options;
-    private readonly AssistantHandler _assistantHandler;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     internal static Client Instance;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
-    public Client(IOptions<OpenAiOptions> options)
+    internal readonly IOptions<OpenAiOptions> Options;
+    internal readonly IAssistantHandler AssistantHandler;
+
+    public Client(IOptions<OpenAiOptions> options, IAssumptionService assumptionService, IStorageService storageService, ISummaryService summaryService, IAssistantService assistantService, IAssistantHandler assistantHandler)
     {
         Options = options;
-        _assistantHandler = new(options);
-        Options.Value.AssistantHandler = _assistantHandler;
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        _assumptionAssistantId = client.GetAssumptionAssistant().GetAwaiter().GetResult()?.Id ?? throw new ArgumentNullException(
-                                    $"{nameof(_assumptionAssistantId)}: The AssumptionAssistant could not be retrieved or created. ");
-                
-        _summaryAssistantId = client.GetSummaryAssistant().GetAwaiter().GetResult()?.Id ??
-                             throw new ArgumentNullException(
-                                 $"{nameof(_summaryAssistantId)}: The AssumptionAssistant could not be retrieved or created. ");
-        
+        AssistantHandler = assistantHandler;
+        AssistantService = assistantService;
+        SummaryService = summaryService;
+        StorageService = storageService;
+        AssumptionService = assumptionService;
         Instance = this;
     }
 
@@ -76,7 +68,7 @@ internal class Client : IOpenAiClient
 
         if (pilot != null)
         {
-            assistant = await _assistantHandler.GetOrCreateAssistantResponse(user!, pilot).ConfigureAwait(false);
+            assistant = await AssistantHandler.GetOrCreateAssistantResponse(user!, pilot).ConfigureAwait(false);
         }
         else
         {
@@ -122,7 +114,7 @@ internal class Client : IOpenAiClient
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
 
-        var assistant = await _assistantHandler.GetOrCreateAssistantResponse(user, pilot).ConfigureAwait(false);
+        var assistant = await AssistantHandler.GetOrCreateAssistantResponse(user, pilot).ConfigureAwait(false);
         var attachments = new List<Attachment>();
         try
         {
@@ -161,275 +153,10 @@ internal class Client : IOpenAiClient
         }
     }
 
-    public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeEstimated)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await GetOpenAiPilotAssumption(textToBeEstimated, client).ConfigureAwait(false);
-    }
-
-    public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionWithConversationResponse(string textToBeEstimated, string threadId)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        
-        var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId).ConfigureAwait(false);
-        var lastMessageContent = (await threadResponse.ListMessagesAsync(new ListQuery(1)).ConfigureAwait(false)).Items.Single().PrintContent();
-        Result<OpenAiResponse> conversationSummary = await GetConversationSummary(threadId, client, 4);
-        string conversationMix = $"Previous Conversation:\n\nSummary: {conversationSummary.Value.Answer}\n\nLast Assistant Message:\n\n{lastMessageContent}";
-
-        return await GetOpenAiPilotAssumption($"{conversationMix}\n\n{textToBeEstimated}", client);
-    }
-
-    public async Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await GetConversationSummary(threadId, client, messageCount).ConfigureAwait(false);
-    }
-
-    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(string[] filePaths, string vectorStoreName, bool waitForDoneStatus = false)
-    {
-        try
-        {
-            using OpenAIClient client = new(Options.Value.ApiKey);
-            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
-            return await UploadToVectorStore(filePaths, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiMultipleFilesVectorStoreResponse>.Error(e.Message);
-        }
-    }
-
-    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToVectorStore(string[] filePaths, string vectorStoreId, bool waitForDoneStatus = false)
-    {
-        try
-        {
-            var list = new List<(string FileName, string FileId)>();
-            using OpenAIClient client = new(Options.Value.ApiKey);
-
-            foreach (var filePath in filePaths)
-            {
-                FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(filePath, FilePurpose.Assistants).ConfigureAwait(false);
-                VectorStoreFileResponse vectorStoreFileResponse = await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
-                if (waitForDoneStatus) await vectorStoreFileResponse.WaitForDone().ConfigureAwait(false);
-                list.Add((fileResponse.FileName, fileResponse.Id));
-            }
-
-            return new OpenAiMultipleFilesVectorStoreResponse(vectorStoreId, list);
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiMultipleFilesVectorStoreResponse>.Error(e.Message);
-        }
-    }
-    
-    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(List<(string FileName, byte[] FileBytes)> files, string vectorStoreName, bool waitForDoneStatus = false)
-    {
-        try
-        {
-            using OpenAIClient client = new(Options.Value.ApiKey);
-            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
-
-            return await UploadToVectorStore(files, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiMultipleFilesVectorStoreResponse>.Error(e.Message);
-        }
-    }
-    
-    public async Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToVectorStore(List<(string FileName, byte[] FileBytes)> files, string vectorStoreId, bool waitForDoneStatus = false)
-    {
-        try
-        {
-            var list = new List<(string FileName, string FileId)>();
-            using OpenAIClient client = new(Options.Value.ApiKey);
-
-            foreach (var file in files)
-            {
-                var fileResponseResult = await UploadStreamToVectorStore(new MemoryStream(file.FileBytes), file.FileName, vectorStoreId, waitForDoneStatus).ConfigureAwait(false);
-                if (fileResponseResult.IsSuccess) list.Add((file.FileName, fileResponseResult.Value.FileId!));
-            }
-
-            return new OpenAiMultipleFilesVectorStoreResponse(vectorStoreId, list);
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiMultipleFilesVectorStoreResponse>.Error(e.Message);
-        }
-    }
-    
-    public async Task<Result<OpenAiVectorStoreResponse>> UploadStreamToNewVectorStore(Stream fileStream, string fileName, string vectorStoreName, bool waitForDoneStatus = false)
-    {
-        try
-        {
-            using OpenAIClient client = new(Options.Value.ApiKey);
-            var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
-            return await UploadStreamToVectorStore(fileStream, fileName, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
-        }
-    }
-
-    public async Task<Result<OpenAiVectorStoreResponse>> UploadStreamToVectorStore(Stream fileStream, string fileName, string vectorStoreId, bool waitForDoneStatus = false)
-    {
-        try
-        {
-            using OpenAIClient client = new(Options.Value.ApiKey);
-            FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(new FileUploadRequest(fileStream, fileName, FilePurpose.Assistants)).ConfigureAwait(false);
-            VectorStoreFileResponse vectorStoreFileResponse = await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
-            await fileStream.DisposeAsync().ConfigureAwait(false);
-            if (waitForDoneStatus) await vectorStoreFileResponse.WaitForDone().ConfigureAwait(false);
-            return new OpenAiVectorStoreResponse(vectorStoreId, fileResponse.Id);
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
-        }
-    }
-
-    public async Task<Result<OpenAiVectorStoreResponse>> DeleteFileInVectorStoreByName(string fileName, string vectorStoreId)
-    {
-        try
-        {
-            using OpenAIClient client = new(Options.Value.ApiKey);
-            var fileListAll = await client.FilesEndpoint.ListFilesAsync(FilePurpose.Assistants).ConfigureAwait(false);
-            var fileIds = fileListAll
-                .Where(r => string.Equals(r.FileName, fileName, StringComparison.OrdinalIgnoreCase))
-                .Select(r => r.Id);
-            var vectorStoreFilesAll = await client.VectorStoresEndpoint.ListVectorStoreFilesAsync(vectorStoreId);
-            var vectorStoreFile = vectorStoreFilesAll.Items.SingleOrDefault(r => fileIds.Contains(r.Id));
-            if (vectorStoreFile != null)
-            {
-                return await DeleteFileInVectorStoreById(vectorStoreFile.Id, vectorStoreId).ConfigureAwait(false);
-            }
-            return new OpenAiVectorStoreResponse(vectorStoreId, vectorStoreFile?.Id);
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
-        }
-    }
-    
-    public async Task<Result<OpenAiVectorStoreResponse>> DeleteFileInVectorStoreById(string fileId, string vectorStoreId)
-    {
-        try
-        {
-            using OpenAIClient client = new(Options.Value.ApiKey);
-            await client.VectorStoresEndpoint.DeleteVectorStoreFileAsync(vectorStoreId, fileId).ConfigureAwait(false);
-            await client.FilesEndpoint.DeleteFileAsync(fileId).ConfigureAwait(false);
-            return new OpenAiVectorStoreResponse(vectorStoreId, fileId);
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiVectorStoreResponse>.Error(e.Message);
-        }
-    }
-
-    public async Task<VectorStoreFileResponse> GetVectorStoreFileStatusAsync(string vectorStoreId, string fileId)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await client.VectorStoresEndpoint.GetVectorStoreFileAsync(vectorStoreId, fileId).ConfigureAwait(false);
-    }
-
-    public async Task<bool> DeleteAssistantAsync(string assistantId)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await client.AssistantsEndpoint.DeleteAssistantAsync(assistantId).ConfigureAwait(false);
-    }
-
-    public async Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
-    }
-    
-    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string assistantName, CreateAssistantRequest assistantRequest)
-    {
-        try
-        {
-            using OpenAIClient client = new (Options.Value.ApiKey);
-
-            ListResponse<AssistantResponse> assistantsResponse = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
-            var assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == assistantName)
-                                    ?? await client.AssistantsEndpoint.CreateAssistantAsync(assistantRequest).ConfigureAwait(false);
-            return assistantResponse;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-    }
-
-    public async Task<AssistantResponse> ModifyAssistantResponseByIdAsync(string assistantId, CreateAssistantRequest assistantRequest)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        return await client.AssistantsEndpoint.ModifyAssistantAsync(assistantId, assistantRequest);
-    }
-
-    public async Task<AssistantResponse> ReplaceVectorStoreIdToAssistantByIdAsync(string assistantId, string vectorStoreId)
-    {
-        using OpenAIClient client = new (Options.Value.ApiKey);
-        AssistantResponse assistant = await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
-        CodeInterpreterResources? newCodeInterpreterResources = assistant.ToolResources?.CodeInterpreter;
-        FileSearchResources newFileSearchResources = assistant.ToolResources?.FileSearch ?? new FileSearchResources();
-        ((List<string>)newFileSearchResources.VectorStoreIds).Add(vectorStoreId);
-        ToolResources toolResources = new (newFileSearchResources, newCodeInterpreterResources);
-        var assistantRequest = new CreateAssistantRequest(assistant, assistant.Model, assistant.Name, assistant.Description, assistant.Instructions, assistant.Tools, toolResources);
-        return await client.AssistantsEndpoint.ModifyAssistantAsync(assistantId, assistantRequest);
-    }
-    
-    private async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumption(string textToBeEstimated, OpenAIClient client)
-    {
-        ThreadResponse? threadResponse = null;
-        try
-        {
-            threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-            { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(_assistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
-            Result<OpenAiResponse> result = await GetTextAnswer(threadResponse.Id, client, _assumptionAssistantId).ConfigureAwait(false);
-            if (!result.IsSuccess) return Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
-            return new OpenAiPilotAssumptionResponse(JsonConvert.DeserializeObject<PilotAssumptionContainer>(result.Value.Answer));
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiPilotAssumptionResponse>.Error(e.Message);
-        }
-        finally
-        {
-            if (threadResponse?.Id != null) await client.ThreadsEndpoint.DeleteThreadAsync(threadResponse.Id).ConfigureAwait(false);
-        }
-    }
-    
-    private async Task<Result<OpenAiResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount)
-    {
-        ThreadResponse? threadResponse = null;
-        try
-        {
-            threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId);
-            var listMessagesAsync = await threadResponse.ListMessagesAsync(new ListQuery(messageCount)).ConfigureAwait(false);
-            var conversation = string.Join("\n\n", listMessagesAsync.Items.Reverse().Select(r => $"{r.Role}: {r.PrintContent()}")); 
-            threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-                { new Message(conversation) })).ConfigureAwait(false);
-            Result<OpenAiResponse> result = await GetTextAnswer(threadResponse.Id, client, _summaryAssistantId).ConfigureAwait(false);
-
-            return !result.IsSuccess ? Result<OpenAiResponse>.Error(result.Errors.ToArray()) : result;
-        }
-        catch (Exception e)
-        {
-            return Result<OpenAiResponse>.Error(e.Message);
-        }
-        finally
-        {
-            if (threadResponse?.Id != null) await client.ThreadsEndpoint.DeleteThreadAsync(threadResponse.Id).ConfigureAwait(false);
-        }
-    }
-    
-    private async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
+    internal async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
     {
         var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId))
-            .WaitForDone(_assistantHandler).ConfigureAwait(false);
+            .WaitForDone(AssistantHandler).ConfigureAwait(false);
 
         if (runResponse.Status != RunStatus.Completed)
             return Result<OpenAiResponse>.Error(
@@ -491,9 +218,9 @@ internal class Client : IOpenAiClient
     {
         string? vectorStoreId = assistant.ToolResources?.FileSearch?.VectorStoreIds?.SingleOrDefault();
         (List<Content> contents, List<(Attachment attachment, string fileName)> attachments, string newVectorStoreId) 
-            = await GetContentAndAttachmentLists(attachmentUrls, vectorStoreId);
+            = await StorageService.GetContentAndAttachmentLists(attachmentUrls, vectorStoreId);
             
-        if (vectorStoreId == null) assistant = await ReplaceVectorStoreIdToAssistantByIdAsync(assistant.Id, newVectorStoreId);
+        if (vectorStoreId == null) assistant = await AssistantService.ReplaceVectorStoreIdToAssistantByIdAsync(assistant.Id, newVectorStoreId);
         if (attachments.Any())
         {
             text += $"{Environment.NewLine}{Environment.NewLine}";
@@ -505,43 +232,5 @@ internal class Client : IOpenAiClient
         }
         contents.Insert(0,new(text));
         return (new Message(contents, attachments: attachments.Select(t => t.attachment)), assistant);
-    }
-    private async Task<(List<Content> contents, List<(Attachment attachment, string fileName)> attachments, string newVectorStoreId)> GetContentAndAttachmentLists(IEnumerable<string>? attachmentUrls, string? vectorStoreId)
-    {
-        var contentList = new List<Content>();
-        var attachmentList = new List<(Attachment attachment, string fileName)>();
-
-        if (attachmentUrls == null) return (contentList, attachmentList, vectorStoreId);
-        
-        IEnumerable<string> imageUrls = attachmentUrls.Where(s => Regex.IsMatch(s,
-            @"^https?:\/\/[\w.-]+\/[\w.-]*\.(?:gif|jpg|jpeg|png|bmp)$",
-            RegexOptions.IgnoreCase));
-        imageUrls.ForEach(u => contentList.Add(new Content(ContentType.ImageUrl, u)));
-        IEnumerable<string> notImageAttachments = attachmentUrls.Except(imageUrls);
-        
-        if (!notImageAttachments.Any()) return (contentList, attachmentList, vectorStoreId);
-        
-        using var httpClient = new HttpClient();
-        foreach (string notImageAttachment in notImageAttachments)
-        {
-            var uri = new Uri(notImageAttachment);
-            string fileName = uri.Segments.Last();
-            Result<OpenAiVectorStoreResponse> fileResponseResult = vectorStoreId != null
-                ? await UploadStreamToVectorStore(
-                    await httpClient.GetStreamAsync(uri),
-                    fileName,
-                    vectorStoreId,
-                    true).ConfigureAwait(false)
-                : await UploadStreamToNewVectorStore(
-                    await httpClient.GetStreamAsync(uri),
-                    fileName,
-                    $"temp_{Guid.NewGuid()}",
-                    true).ConfigureAwait(false);
-            if (!fileResponseResult.IsSuccess) throw new Exception(string.Join(';', fileResponseResult.Errors));
-            vectorStoreId = fileResponseResult.Value.VectorStoreId;
-            attachmentList.Add((new Attachment(fileResponseResult.Value.FileId, Tool.FileSearch), fileName));
-        }
-
-        return (contentList, attachmentList, vectorStoreId);
     }
 }

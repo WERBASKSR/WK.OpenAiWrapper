@@ -16,9 +16,10 @@ public record ToolFunction(string? MethodFullName = null, string? Description = 
             case ToolSearch: return Tool.FileSearch;
             case CodeInterpreter: return Tool.CodeInterpreter;
             case Function:
-                MethodInfo methodInfo = new ToolFunctionInfo(MethodFullName).GetMethodInfo();
-                return methodInfo.IsStatic ? Tool.GetOrCreateTool(methodInfo.DeclaringType, methodInfo.Name) 
-                    : Tool.GetOrCreateTool(Activator.CreateInstance(methodInfo.DeclaringType), methodInfo.Name);
+                var toolFunctionInfo = new ToolFunctionInfo(MethodFullName);
+                var methodInfo = toolFunctionInfo.GetMethodInfo();
+                return methodInfo.IsStatic ? Tool.GetOrCreateTool(methodInfo.DeclaringType, methodInfo.Name, toolFunctionInfo.Description) 
+                    : Tool.GetOrCreateTool(Activator.CreateInstance(methodInfo.DeclaringType), methodInfo.Name, toolFunctionInfo.Description);
                 break;
             default:
                 throw new NotImplementedException(Type);

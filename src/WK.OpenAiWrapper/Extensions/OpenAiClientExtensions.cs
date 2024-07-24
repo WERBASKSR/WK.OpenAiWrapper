@@ -13,6 +13,6 @@ internal static class ModelExtensions
     }
     public static PilotDescription ToPilotDescription(this Pilot pilot) =>
         new(pilot.Name, pilot.Description, pilot.Instructions, pilot.Model,
-            pilot.Tools.Select(t 
+            pilot.Tools.Where(t => t?.Function != null).Select(t 
                 => new FunctionDescription(t.Function.Name, t.Function.Description)).ToHashSet());
 }

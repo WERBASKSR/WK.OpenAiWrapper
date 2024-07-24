@@ -7,11 +7,11 @@ using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper;
 
-public class ClientConfig : IOpenAiClientConfig
+public class PilotConfig : IOpenAiPilotConfig
 {
     private readonly OpenAiOptions _options;
 
-    public ClientConfig(IOptions<OpenAiOptions> options)
+    public PilotConfig(IOptions<OpenAiOptions> options)
     {
         _options = options.Value;
     }

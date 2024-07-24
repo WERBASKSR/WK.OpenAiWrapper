@@ -4,13 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Interfaces;
+using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
 using Xunit;
 
 namespace WK.OpenAiWrapper.Tests;
 
-public class ClientConfigTests
+public class PilotConfigTests
 {
     
     [Fact]
@@ -46,7 +47,7 @@ public class ClientConfigTests
         
         serviceCollection.RegisterOpenAi(config);
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
-        var clientConfig = buildServiceProvider.GetService<IOpenAiClientConfig>() as ClientConfig;
+        var clientConfig = buildServiceProvider.GetService<IOpenAiPilotConfig>() as PilotConfig;
         var client = buildServiceProvider.GetService<IOpenAiClient>() as Client;
 
         //Act
