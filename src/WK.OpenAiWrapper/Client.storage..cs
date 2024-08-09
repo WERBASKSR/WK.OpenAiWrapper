@@ -1,7 +1,7 @@
 ﻿using WK.OpenAiWrapper.Result;
-using WK.OpenAiWrapper.Models;
 using OpenAI.VectorStores;
 using WK.OpenAiWrapper.Interfaces.Services;
+using WK.OpenAiWrapper.Models.Responses;
 
 namespace WK.OpenAiWrapper;
 

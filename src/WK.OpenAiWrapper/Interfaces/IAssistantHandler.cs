@@ -12,5 +12,5 @@ internal interface IAssistantHandler
     Assistant GetCreateAssistant(string user, string pilotName);
     CreateAssistantRequest GetCreateAssistantRequest(string user, string pilotName);
     Task<string> GetOrCreateAssistantId(string user, string pilotName);
-    Task<AssistantResponse> GetOrCreateAssistantResponse(string user, string pilotName);
+    Task<AssistantResponse> GetOrCreateAssistantResponse(string? user, string pilotName);
 }

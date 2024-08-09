@@ -1,6 +1,6 @@
 ﻿using WK.OpenAiWrapper.Result;
-using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Interfaces.Services;
+using WK.OpenAiWrapper.Models.Responses;
 
 namespace WK.OpenAiWrapper;
 

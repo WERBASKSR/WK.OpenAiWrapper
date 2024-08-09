@@ -6,13 +6,13 @@ using WK.OpenAiWrapper.Helpers;
 
 namespace WK.OpenAiWrapper.Models;
 
-internal record Assistant(string User, Pilot Pilot) : IEquatable<(string user, string pilot)>
+internal record Assistant(string? User, Pilot Pilot) : IEquatable<(string user, string pilot)>
 {
     internal CreateAssistantRequest? _createAssistantRequest;
 
     public CreateAssistantRequest CreateAssistantRequest => _createAssistantRequest ??= GetCreateAssistantRequest();
 
-    public bool Equals((string user, string pilot) keyTuple)
+    public bool Equals((string? user, string pilot) keyTuple)
     {
         return string.Equals(User, keyTuple.user, StringComparison.InvariantCultureIgnoreCase) &&
                string.Equals(Pilot.Name, keyTuple.pilot, StringComparison.InvariantCultureIgnoreCase);
@@ -20,8 +20,9 @@ internal record Assistant(string User, Pilot Pilot) : IEquatable<(string user, s
 
     private CreateAssistantRequest GetCreateAssistantRequest()
     {
-         return new CreateAssistantRequest(Pilot.Model, UserHelper.GetPilotUserKey(Pilot.Name, User), Pilot.Description, 
-             $"{Pilot.Instructions}\r\n{string.Format(Prompts.AiPromptUseName, User.FirstToUpper())}", 
+        string userPrompt = User != null ? string.Format(Prompts.AiPromptUseName, User.FirstToUpper()) : string.Empty;
+        return new CreateAssistantRequest(Pilot.Model, UserHelper.GetPilotUserKey(Pilot.Name, User), Pilot.Description, 
+             $"{Pilot.Instructions}\r\n{userPrompt}", 
              Pilot.Tools, Pilot.ToolResources, UserHelper.GetDictionaryWithUser(User), 
              responseFormat: Pilot.JsonResponse ? ChatResponseFormat.Json : ChatResponseFormat.Auto);
     }

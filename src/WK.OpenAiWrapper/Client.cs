@@ -1,7 +1,6 @@
 ﻿using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Helpers;
-using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Options;
 using WK.OpenAiWrapper.Constants;
 using WK.OpenAiWrapper.Services;
@@ -15,6 +14,7 @@ using OpenAI.Models;
 using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Interfaces.Services;
+using WK.OpenAiWrapper.Models.Responses;
 
 namespace WK.OpenAiWrapper;
 
@@ -110,7 +110,7 @@ internal partial class Client : IOpenAiClient
         }
     }
 
-    public async Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false)
+    public async Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string? user, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
 

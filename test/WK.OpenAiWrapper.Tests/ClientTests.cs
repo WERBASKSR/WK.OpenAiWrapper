@@ -8,6 +8,7 @@ using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
 using Xunit;
 using WK.OpenAiWrapper.Interfaces.Clients;
+using WK.OpenAiWrapper.Models.Responses;
 
 namespace WK.OpenAiWrapper.Tests;
 
@@ -317,7 +318,7 @@ public class ClientTests
 
     private static IServiceProvider ArrangeOpenAiClient()
     {
-        var json = @"{""OpenAi:ApiKey"": ""apikey"",
+        var json = @"{""OpenAi:ApiKey"": """",
                     ""OpenAi:Pilots"": [
                         {
                             ""Name"": ""Master"",

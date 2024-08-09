@@ -59,16 +59,17 @@ public static class ServiceCollectionExtensions
     private static void RegisterOpenAiClient(IServiceCollection serviceCollection)
     {
         serviceCollection.AddTransient(p => new OpenAIClient(new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
-        serviceCollection.AddScoped<IAssistantHandler>(p => new AssistantHandler(p.GetRequiredService<IOptions<OpenAiOptions>>()));
+        serviceCollection.AddSingleton<IAssistantHandler>(p => new AssistantHandler(p.GetRequiredService<IOptions<OpenAiOptions>>()));
         serviceCollection.AddSingleton<IOpenAiClient, Client>();
         serviceCollection.AddSingleton<IOpenAiPilotConfig, PilotConfig>();
     }    
     private static void RegisterServices(IServiceCollection serviceCollection)
     {
-        serviceCollection.AddScoped<IAssumptionService, AssumptionService>(p => GetAssumptionService(p).GetAwaiter().GetResult());
-        serviceCollection.AddScoped<ISummaryService, SummaryService>(p => GetSummaryService(p).GetAwaiter().GetResult());
-        serviceCollection.AddScoped<IStorageService, StorageService>();
-        serviceCollection.AddScoped<IAssistantService, AssistantService>();
+        serviceCollection.AddTransient<IAssumptionService, AssumptionService>(p => GetAssumptionService(p).GetAwaiter().GetResult());
+        serviceCollection.AddTransient<ISummaryService, SummaryService>(p => GetSummaryService(p).GetAwaiter().GetResult());
+        serviceCollection.AddTransient<IStorageService, StorageService>();
+        serviceCollection.AddTransient<IAssistantService, AssistantService>();
+        serviceCollection.AddTransient<IFileService, FileService>();
     }
 
     private static async Task<AssumptionService> GetAssumptionService(IServiceProvider serviceProvider)

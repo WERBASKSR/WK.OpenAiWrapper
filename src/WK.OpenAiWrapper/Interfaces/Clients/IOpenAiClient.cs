@@ -1,5 +1,5 @@
 ﻿using WK.OpenAiWrapper.Result;
-using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Models.Responses;
 
 namespace WK.OpenAiWrapper.Interfaces.Clients;
 

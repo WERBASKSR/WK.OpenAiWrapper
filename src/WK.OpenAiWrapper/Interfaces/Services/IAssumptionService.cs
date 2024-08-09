@@ -1,4 +1,4 @@
-﻿using WK.OpenAiWrapper.Models;
+﻿using WK.OpenAiWrapper.Models.Responses;
 using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Interfaces.Services;

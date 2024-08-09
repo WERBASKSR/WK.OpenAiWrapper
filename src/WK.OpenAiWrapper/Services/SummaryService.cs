@@ -1,7 +1,7 @@
 ﻿using OpenAI;
 using OpenAI.Threads;
 using WK.OpenAiWrapper.Interfaces.Services;
-using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Models.Responses;
 using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Services;
