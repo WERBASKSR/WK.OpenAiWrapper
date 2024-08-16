@@ -6,8 +6,8 @@ namespace WK.OpenAiWrapper.Interfaces.Services;
 
 internal interface ISummaryService
 {
-    Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10);
+    Task<Result<OpenAiThreadResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10);
 
-    internal Task<Result<OpenAiResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount);
+    internal Task<Result<OpenAiThreadResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount);
 
 }

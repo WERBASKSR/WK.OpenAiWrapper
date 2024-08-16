@@ -10,7 +10,7 @@ public interface IOpenAiSummaryClient
     /// <param name="threadId">The threadId of the conversation with the OpenAI service is to be summarized.</param>
     /// <param name="messageCount">The number of recent messages to include in the summary. (Default: 10)</param>
     /// <returns>
-    ///     A `Result` object containing an `OpenAiResponse` from the OpenAI service, which includes the summary of the conversation.
+    ///     A `Result` object containing an `OpenAiThreadResponse` from the OpenAI service, which includes the summary of the conversation.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     ///     If `threadId` is empty or null.
@@ -22,5 +22,5 @@ public interface IOpenAiSummaryClient
     ///     This method retrieves the specified number of recent messages from the conversation between the specified threadId
     ///     and the OpenAI service, and returns a summary of those messages.
     /// </remarks>
-    Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10);
+    Task<Result<OpenAiThreadResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10);
 }

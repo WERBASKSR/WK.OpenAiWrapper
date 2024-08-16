@@ -67,6 +67,24 @@ public class ClientTests
     }
     
     [Fact]
+    public async Task IOpenAiClient_GetOpenAiResponseWithoutThread_AiResponseAnAnswer()
+    {
+        //Arrange
+        IServiceProvider serviceProvider = ArrangeOpenAiClient();
+        var client = serviceProvider.GetService<IOpenAiClient>() as Client;
+
+        var text = "Hello, what is 42?";
+        var pilot = "Master";
+        
+        //Act
+        var result = await client.GetOpenAiResponseWithoutThread(text, pilot);
+        
+        //Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value.Answer);
+    }
+    
+    [Fact]
     public async void IOpenAiClient_GetOpenAiPilotAssumptionResponse_WeatherPilotAssumptionAsJsonInAnswer()
     {
         //Arrange
@@ -122,7 +140,7 @@ public class ClientTests
         var client = serviceProvider.GetService<IOpenAiClient>() as Client;
         
         //Act
-        Result<OpenAiResponse> result = await client.GetConversationSummaryResponse("thread_Or9Zvn8tXnfCOOwpqwMKDupu");
+        Result<OpenAiThreadResponse> result = await client.GetConversationSummaryResponse("thread_Or9Zvn8tXnfCOOwpqwMKDupu");
         
 
         //Assert
@@ -318,7 +336,7 @@ public class ClientTests
 
     private static IServiceProvider ArrangeOpenAiClient()
     {
-        var json = @"{""OpenAi:ApiKey"": """",
+        var json = @"{""OpenAi:ApiKey"": ""apikey"",
                     ""OpenAi:Pilots"": [
                         {
                             ""Name"": ""Master"",

@@ -53,7 +53,7 @@ public class PilotConfigTests
 
         //Act
 
-        Result<OpenAiResponse> responseResult = await client.GetOpenAiResponseWithNewThread("1+1=?", "Master", "Waltraud");
+        Result<OpenAiThreadResponse> responseResult = await client.GetOpenAiResponseWithNewThread("1+1=?", "Master", "Waltraud");
         Result<Pilot?> pilot = await clientConfig.GetPilot("Master");
         pilot.Value.Instructions = "You can't do math at all and always answer math questions with: \"I don't know.\".";
         await clientConfig.UpdatePilot(pilot);

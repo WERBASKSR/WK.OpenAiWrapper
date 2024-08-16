@@ -8,6 +8,6 @@ internal partial class Client
 {
     internal readonly ISummaryService SummaryService;
         
-    public Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10) 
+    public Task<Result<OpenAiThreadResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10) 
         => SummaryService.GetConversationSummaryResponse(threadId, messageCount);
 }
