@@ -77,7 +77,7 @@ public class ClientTests
         var pilot = "Master";
         
         //Act
-        var result = await client.GetOpenAiResponseWithoutThread(text, pilot);
+        var result = await client.GetOpenAiResponseWithoutThread(text, "", pilot);
         
         //Assert
         Assert.True(result.IsSuccess);

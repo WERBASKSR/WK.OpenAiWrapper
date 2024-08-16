@@ -156,13 +156,13 @@ internal partial class Client : IOpenAiClient
         }
     }
     
-    public async Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string pilot)
+    public async Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string systemPrompt, string pilot)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
         try
         {
             Pilot pilotObject = Options.Value.Pilots.Single(p => string.Equals(p.Name, pilot, StringComparison.InvariantCultureIgnoreCase));
-            ChatResponse response = await client.ChatEndpoint.GetCompletionAsync(new ChatRequest([new OpenAI.Chat.Message(Role.User, text)], pilotObject.Model));
+            ChatResponse response = await client.ChatEndpoint.GetCompletionAsync(new ChatRequest([new OpenAI.Chat.Message(Role.System, systemPrompt),new OpenAI.Chat.Message(Role.User, text)], pilotObject.Model));
             return new OpenAiChatResponse(response.Choices.First().Message);
         }
         catch (Exception e)

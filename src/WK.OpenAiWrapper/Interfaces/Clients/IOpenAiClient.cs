@@ -51,17 +51,18 @@ public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOp
     Task<Result<OpenAiThreadResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false);
     
     /// <summary>
-    /// Gets an OpenAI response without starting a new thread.
+    ///     Gets an OpenAI response without starting a new thread.
     /// </summary>
     /// <param name="text">The text to send to the OpenAI service.</param>
+    /// <param name="systemPrompt">The system prompt to be used by the OpenAI service.</param>
     /// <param name="pilot">The name of the pilot to influence the response.</param>
     /// <returns>
-    /// An `OpenAiChatResponse` object containing the response from the OpenAI service.
+    ///     An `OpenAiChatResponse` object containing the response from the OpenAI service.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// If `text` or `pilot` is empty or null.
+    ///     If `text`, `systemPrompt`, or `pilot` is empty or null.
     /// </exception>
-    Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string pilot);
+    Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string systemPrompt, string pilot);
 
     /// <summary>
     ///     Gets an OpenAI image response.
