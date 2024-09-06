@@ -161,7 +161,9 @@ internal partial class Client : IOpenAiClient
         using OpenAIClient client = new (Options.Value.ApiKey);
         try
         {
-            Pilot pilotObject = Options.Value.Pilots.Single(p => string.Equals(p.Name, pilot ?? "Master", StringComparison.InvariantCultureIgnoreCase));
+            Pilot pilotObject = 
+                Options.Value.Pilots.SingleOrDefault(p => string.Equals(p.Name, pilot, StringComparison.InvariantCultureIgnoreCase))
+                ?? Options.Value.Pilots.First();
             ChatResponse response = await client.ChatEndpoint.GetCompletionAsync(new ChatRequest([new OpenAI.Chat.Message(Role.System, systemPrompt),new OpenAI.Chat.Message(Role.User, text)], pilotObject.Model));
             return new OpenAiChatResponse(response.Choices.First().Message);
         }
