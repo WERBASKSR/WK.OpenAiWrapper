@@ -21,6 +21,8 @@ public static class ServiceCollectionExtensions
             options.ApiKey = apiKey;
             options.Pilots.AddRange(pilots);
         });
+
+        if (!pilots.Any()) pilots = [new Pilot("Master", string.Empty, string.Empty)];
         
         TransferToolBuilders(pilots);
         CreateToolResources(pilots);
@@ -36,6 +38,7 @@ public static class ServiceCollectionExtensions
         serviceCollection = serviceCollection.PostConfigure<OpenAiOptions>(o =>
         {
             o.Pilots.AddRange(pilots);
+            if (!o.Pilots.Any()) o.Pilots.Add(new Pilot("Master", string.Empty, string.Empty));
             ValidatePilots(o.Pilots);
             TransferToolBuilders(o.Pilots);
             CreateToolResources(o.Pilots);

@@ -28,8 +28,21 @@ public class ClientTests
     }
     
     [Fact]
+    public void ServiceCollectionExtensions_RegisterOpenAiWithoutPilots_DefaultPilotIsAdded()
+    {
+        //Arrange
+        IServiceProvider serviceProvider = ArrangeOpenAiClientWithoutPilot();
+        var client = serviceProvider.GetService<IOpenAiClient>() as Client;
+        
+        //Assert
+        Assert.NotNull(client);
+        Assert.True(client.Options.Value.Pilots.Count == 1);
+    }
+    
+    [Fact]
     public async void IOpenAiClient_GetOpenAiResponseWithNewThreadAndWithFunctionCall_AiResponseAnAnswer()
     {
+        //Arrange
         IServiceProvider serviceProvider = ArrangeOpenAiClient();
         var client = serviceProvider.GetService<IOpenAiClient>() as Client;
         string user = $"UnitTest_{Guid.NewGuid()}";
@@ -336,36 +349,51 @@ public class ClientTests
 
     private static IServiceProvider ArrangeOpenAiClient()
     {
-        var json = @"{""OpenAi:ApiKey"": ""apikey"",
-                    ""OpenAi:Pilots"": [
-                        {
-                            ""Name"": ""Master"",
-                            ""Instructions"": ""You are a helpful assistant."",
-                            ""Description"": ""This is a Fallback assistant for all general questions and tasks."",
-                            ""ToolFunctions"": [
-                              {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.AdoCom.GetWIInfos""
-                              },
-                              {
-                                ""Type"": ""file_search""
-                              }]
-                        },
-                        {
-                            ""Name"": ""Weather"",
-                            ""Instructions"": ""You are a weather expert."",
-                            ""Description"": ""This is a weather assistant for weather questions."",
-                            ""ToolFunctions"": [
-                              {
-                                ""MethodFullName"": ""WK.OpenAiWrapper.Tests.WeatherCalls.GetWeather"",
-                                ""Description"": ""Retrieves information about a weather in a location.""
-                              }]
-                        }
-                    ]
-                }";
+        var json = """
+                   {"OpenAi:ApiKey": "apikey",
+                       "OpenAi:Pilots": [
+                           {
+                               "Name": "Master",
+                               "Instructions": "You are a helpful assistant.",
+                               "Description": "This is a Fallback assistant for all general questions and tasks.",
+                               "ToolFunctions": [
+                                 {
+                                   "MethodFullName": "WK.OpenAiWrapper.Tests.AdoCom.GetWIInfos"
+                                 },
+                                 {
+                                   "Type": "file_search"
+                                 }]
+                           },
+                           {
+                               "Name": "Weather",
+                               "Instructions": "You are a weather expert.",
+                               "Description": "This is a weather assistant for weather questions.",
+                               "ToolFunctions": [
+                                 {
+                                   "MethodFullName": "WK.OpenAiWrapper.Tests.WeatherCalls.GetWeather",
+                                   "Description": "Retrieves information about a weather in a location."
+                                 }]
+                           }
+                       ]
+                   }
+                   """;
         
         var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
         var serviceCollection = new ServiceCollection();
         serviceCollection.RegisterOpenAi(config, [new Pilot("pilot1", "Be helpful", "Helpful Ai")]);
+        return serviceCollection.BuildServiceProvider();
+    }
+    
+    
+    private static IServiceProvider ArrangeOpenAiClientWithoutPilot()
+    {
+        var json = """
+                   {"OpenAi:ApiKey": "apikey"}
+                   """;
+        
+        var config = new ConfigurationBuilder().AddJsonStream(new MemoryStream(Encoding.ASCII.GetBytes(json))).Build();
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.RegisterOpenAi(config);
         return serviceCollection.BuildServiceProvider();
     }
 }

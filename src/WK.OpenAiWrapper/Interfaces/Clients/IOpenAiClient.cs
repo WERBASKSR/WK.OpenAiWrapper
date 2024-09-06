@@ -62,7 +62,7 @@ public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOp
     /// <exception cref="ArgumentNullException">
     ///     If `text`, `systemPrompt`, or `pilot` is empty or null.
     /// </exception>
-    Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string systemPrompt, string pilot);
+    Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string systemPrompt, string pilot = null);
 
     /// <summary>
     ///     Gets an OpenAI image response.

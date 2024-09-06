@@ -156,12 +156,12 @@ internal partial class Client : IOpenAiClient
         }
     }
     
-    public async Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string systemPrompt, string pilot)
+    public async Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string systemPrompt, string? pilot = null)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
         try
         {
-            Pilot pilotObject = Options.Value.Pilots.Single(p => string.Equals(p.Name, pilot, StringComparison.InvariantCultureIgnoreCase));
+            Pilot pilotObject = Options.Value.Pilots.Single(p => string.Equals(p.Name, pilot ?? "Master", StringComparison.InvariantCultureIgnoreCase));
             ChatResponse response = await client.ChatEndpoint.GetCompletionAsync(new ChatRequest([new OpenAI.Chat.Message(Role.System, systemPrompt),new OpenAI.Chat.Message(Role.User, text)], pilotObject.Model));
             return new OpenAiChatResponse(response.Choices.First().Message);
         }
@@ -173,7 +173,7 @@ internal partial class Client : IOpenAiClient
     
     internal async Task<Result<OpenAiThreadResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
     {
-        var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId))
+        var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId), _ => { })
             .WaitForDone(AssistantHandler).ConfigureAwait(false);
 
         if (runResponse.Status != RunStatus.Completed)
