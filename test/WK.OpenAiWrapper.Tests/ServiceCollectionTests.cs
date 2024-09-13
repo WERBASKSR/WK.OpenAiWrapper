@@ -51,11 +51,26 @@ public class ServiceCollectionTests
         
         //Act
         serviceCollection.RegisterOpenAi(config, pilot);
+        serviceCollection.AddScoped<IMyAiService, MyAiService>();
         var buildServiceProvider = serviceCollection.BuildServiceProvider();
         var client = buildServiceProvider.GetService<IOpenAiClient>() as Client;
         
         //Assert
         Assert.NotNull(client);
         Assert.True(client.Options.Value.Pilots.Count == 2);
+    }
+
+    class MyAiService : IMyAiService
+    {
+        private readonly IOpenAiClient _client;
+
+        public MyAiService(IOpenAiClient client)
+        {
+            _client = client;
+        }
+    }
+    interface IMyAiService
+    {
+        
     }
 }

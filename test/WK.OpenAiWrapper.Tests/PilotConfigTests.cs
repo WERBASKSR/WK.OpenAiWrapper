@@ -6,6 +6,7 @@ using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Models.Responses;
 using WK.OpenAiWrapper.Result;
 using Xunit;
 
@@ -52,7 +53,7 @@ public class PilotConfigTests
 
         //Act
 
-        Result<OpenAiResponse> responseResult = await client.GetOpenAiResponseWithNewThread("1+1=?", "Master", "Waltraud");
+        Result<OpenAiThreadResponse> responseResult = await client.GetOpenAiResponseWithNewThread("1+1=?", "Master", "Waltraud");
         Result<Pilot?> pilot = await clientConfig.GetPilot("Master");
         pilot.Value.Instructions = "You can't do math at all and always answer math questions with: \"I don't know.\".";
         await clientConfig.UpdatePilot(pilot);

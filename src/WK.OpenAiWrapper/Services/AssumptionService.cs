@@ -3,6 +3,7 @@ using OpenAI;
 using OpenAI.Threads;
 using WK.OpenAiWrapper.Interfaces.Services;
 using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Models.Responses;
 using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Services;
@@ -21,7 +22,7 @@ internal class AssumptionService(string assumptionAssistantId) : IAssumptionServ
         
         var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId).ConfigureAwait(false);
         var lastMessageContent = (await threadResponse.ListMessagesAsync(new ListQuery(1)).ConfigureAwait(false)).Items.Single().PrintContent();
-        Result<OpenAiResponse> conversationSummary = await Client.Instance.SummaryService.GetConversationSummary(threadId, client, 4);
+        Result<OpenAiThreadResponse> conversationSummary = await Client.Instance.SummaryService.GetConversationSummary(threadId, client, 4);
         string conversationMix = $"Previous Conversation:\n\nSummary: {conversationSummary.Value.Answer}\n\nLast Assistant Message:\n\n{lastMessageContent}";
 
         return await GetOpenAiPilotAssumption($"{conversationMix}\n\n{textToBeEstimated}", client);
@@ -34,7 +35,7 @@ internal class AssumptionService(string assumptionAssistantId) : IAssumptionServ
         {
             threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
                 { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(Client.Instance.AssistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
-            Result<OpenAiResponse> result = await Client.Instance.GetTextAnswer(threadResponse.Id, client, assumptionAssistantId).ConfigureAwait(false);
+            Result<OpenAiThreadResponse> result = await Client.Instance.GetTextAnswer(threadResponse.Id, client, assumptionAssistantId).ConfigureAwait(false);
             if (!result.IsSuccess) return Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
             return new OpenAiPilotAssumptionResponse(JsonConvert.DeserializeObject<PilotAssumptionContainer>(result.Value.Answer));
         }

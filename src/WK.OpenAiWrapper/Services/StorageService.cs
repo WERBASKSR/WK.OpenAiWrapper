@@ -5,9 +5,9 @@ using System.Text.RegularExpressions;
 using MoreLinq.Extensions;
 using OpenAI.Threads;
 using WK.OpenAiWrapper.Extensions;
-using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Interfaces.Services;
+using WK.OpenAiWrapper.Models.Responses;
 
 namespace WK.OpenAiWrapper.Services;
 

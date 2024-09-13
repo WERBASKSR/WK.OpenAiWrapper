@@ -15,7 +15,7 @@ internal class AssistantHandler(IOptions<OpenAiOptions> options) : IAssistantHan
     private readonly Lazy<HashSet<PilotDescription>> _pilotDescriptions = new(() => options.Value.Pilots.Select(p => p.ToPilotDescription()).ToHashSet());
     public HashSet<PilotDescription> PilotDescriptions => _pilotDescriptions.Value;
     
-    public Assistant GetCreateAssistant(string user, string pilotName)
+    public Assistant GetCreateAssistant(string? user, string pilotName)
     {
         string pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
         var assistant = Assistants.GetValue(pilotUserKey);
@@ -28,14 +28,14 @@ internal class AssistantHandler(IOptions<OpenAiOptions> options) : IAssistantHan
         return assistant;
     }
 
-    public CreateAssistantRequest GetCreateAssistantRequest(string user, string pilotName)
+    public CreateAssistantRequest GetCreateAssistantRequest(string? user, string pilotName)
         => GetCreateAssistant(user, pilotName).CreateAssistantRequest;
 
     public async Task<string> GetOrCreateAssistantId(string user, string pilotName) =>
         AssistantIds.GetValue(UserHelper.GetPilotUserKey(pilotName, user)) ??
         (await GetOrCreateAssistantResponse(user, pilotName).ConfigureAwait(false)).Id;
 
-    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string user, string pilotName)
+    public async Task<AssistantResponse> GetOrCreateAssistantResponse(string? user, string pilotName)
     {
         var pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
         var assistantId = AssistantIds.GetValue(pilotUserKey);

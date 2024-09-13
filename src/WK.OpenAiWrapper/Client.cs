@@ -1,7 +1,6 @@
 ﻿using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Helpers;
-using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Options;
 using WK.OpenAiWrapper.Constants;
 using WK.OpenAiWrapper.Services;
@@ -10,11 +9,15 @@ using OpenAI;
 using OpenAI.Threads;
 using OpenAI.Assistants;
 using OpenAI.Audio;
+using OpenAI.Chat;
 using OpenAI.Images;
 using OpenAI.Models;
 using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Interfaces.Services;
+using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Models.Responses;
+using Message = OpenAI.Threads.Message;
 
 namespace WK.OpenAiWrapper;
 
@@ -56,13 +59,13 @@ internal partial class Client : IOpenAiClient
         return await GetSpeech(text, client).ConfigureAwait(false);
     }
 
-    public async Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false)
+    public async Task<Result<OpenAiThreadResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
         
         var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId).ConfigureAwait(false);
         var user = threadResponse.Metadata.GetValueOrDefault("User");
-        if (user == null) Result<OpenAiResponse>.Error("Field 'User' is missing in Metadata.");
+        if (user == null) Result<OpenAiThreadResponse>.Error("Field 'User' is missing in Metadata.");
         
         AssistantResponse assistant;
 
@@ -74,7 +77,7 @@ internal partial class Client : IOpenAiClient
         {
             ListResponse<RunResponse> lastRunResponses = await threadResponse.ListRunsAsync(new ListQuery(limit: 1)).ConfigureAwait(false);
             var id = lastRunResponses.Items.SingleOrDefault()?.AssistantId;
-            if (id == null) return Result<OpenAiResponse>.Error($"No runs were found for the threadId {threadId}.");
+            if (id == null) return Result<OpenAiThreadResponse>.Error($"No runs were found for the threadId {threadId}.");
             assistant = await GetAssistantResponseByIdAsync(id).ConfigureAwait(false);
         }
         
@@ -95,7 +98,7 @@ internal partial class Client : IOpenAiClient
         }
         catch (Exception e)
         {
-            return Result<OpenAiResponse>.Error(e.Message);
+            return Result<OpenAiThreadResponse>.Error(e.Message);
         }
         finally
         {
@@ -110,7 +113,7 @@ internal partial class Client : IOpenAiClient
         }
     }
 
-    public async Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false)
+    public async Task<Result<OpenAiThreadResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string? user, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false)
     {
         using OpenAIClient client = new (Options.Value.ApiKey);
 
@@ -138,7 +141,7 @@ internal partial class Client : IOpenAiClient
         }
         catch (Exception e)
         {
-            return Result<OpenAiResponse>.Error(e.Message);
+            return Result<OpenAiThreadResponse>.Error(e.Message);
         }
         finally
         {
@@ -152,21 +155,38 @@ internal partial class Client : IOpenAiClient
             }
         }
     }
-
-    internal async Task<Result<OpenAiResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
+    
+    public async Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string systemPrompt, string? pilot = null)
     {
-        var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId))
+        using OpenAIClient client = new (Options.Value.ApiKey);
+        try
+        {
+            Pilot pilotObject = 
+                Options.Value.Pilots.SingleOrDefault(p => string.Equals(p.Name, pilot, StringComparison.InvariantCultureIgnoreCase))
+                ?? Options.Value.Pilots.First();
+            ChatResponse response = await client.ChatEndpoint.GetCompletionAsync(new ChatRequest([new OpenAI.Chat.Message(Role.System, systemPrompt),new OpenAI.Chat.Message(Role.User, text)], pilotObject.Model));
+            return new OpenAiChatResponse(response.Choices.First().Message);
+        }
+        catch (Exception e)
+        {
+            return Result<OpenAiChatResponse>.Error(e.Message);
+        }
+    }
+    
+    internal async Task<Result<OpenAiThreadResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
+    {
+        var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId), _ => { })
             .WaitForDone(AssistantHandler).ConfigureAwait(false);
 
         if (runResponse.Status != RunStatus.Completed)
-            return Result<OpenAiResponse>.Error(
+            return Result<OpenAiThreadResponse>.Error(
                 $"Run {runResponse.Id} was ended with the status {Enum.GetName(typeof(RunStatus), runResponse.Status)}.");
 
         ListResponse<MessageResponse> messagesResponse = await runResponse.ListMessagesAsync(new ListQuery(limit: 1)).ConfigureAwait(false);
         var answer = messagesResponse.Items.SingleOrDefault()?.PrintContent();
-        if (answer == null) return Result<OpenAiResponse>.Error("No answer was returned from the OpenAI API.");
+        if (answer == null) return Result<OpenAiThreadResponse>.Error("No answer was returned from the OpenAI API.");
 
-        return new OpenAiResponse(answer, threadId, assistantId);
+        return new OpenAiThreadResponse(answer, threadId, assistantId);
     }
 
     private async Task<Result<OpenAiImageResponse>> GetImage(string text, OpenAIClient client)

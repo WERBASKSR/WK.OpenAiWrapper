@@ -2,13 +2,13 @@
 
 internal static class UserHelper
 {
-    internal static IReadOnlyDictionary<string, string> GetDictionaryWithUser(string user)
+    internal static IReadOnlyDictionary<string, string> GetDictionaryWithUser(string? user)
     {
-        return new Dictionary<string, string> { { "User", user } };
+        return new Dictionary<string, string> { { "User", user ?? string.Empty } };
     }
 
-    internal static string GetPilotUserKey(string pilot, string user)
+    internal static string GetPilotUserKey(string pilot, string? user)
     {
-        return $"{pilot}_{user}";
+        return $"{pilot}_{user??string.Empty}";
     }
 }

@@ -1,5 +1,5 @@
 ﻿using WK.OpenAiWrapper.Result;
-using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Models.Responses;
 
 namespace WK.OpenAiWrapper.Interfaces.Clients;
 
@@ -20,7 +20,7 @@ public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOp
     /// A boolean indicating whether to delete the files after use. (Default: false)
     /// </param>
     /// <returns>
-    /// An `OpenAiResponse` object containing the response from the OpenAI service.
+    /// An `OpenAiThreadResponse` object containing the response from the OpenAI service.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// If `text` or `threadId` is empty or null.
@@ -28,7 +28,7 @@ public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOp
     /// <exception cref="InvalidOperationException">
     /// If the thread with the specified ID cannot be found.
     /// </exception>
-    Task<Result<OpenAiResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false);
+    Task<Result<OpenAiThreadResponse>> GetOpenAiResponse(string text, string threadId, string? pilot = null, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false);
 
     /// <summary>
     /// Gets an OpenAI response by starting a new thread.
@@ -43,12 +43,26 @@ public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOp
     /// A boolean indicating whether to delete the files after use. (Default: false)
     /// </param>
     /// <returns>
-    /// An `OpenAiResponse` object containing the response from the OpenAI service.
+    /// An `OpenAiThreadResponse` object containing the response from the OpenAI service.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// If `text`, `pilot`, or `user` is empty or null.
     /// </exception>
-    Task<Result<OpenAiResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false);
+    Task<Result<OpenAiThreadResponse>> GetOpenAiResponseWithNewThread(string text, string pilot, string user, IEnumerable<string>? attachmentUrls = null, bool deleteFilesAfterUse = false);
+    
+    /// <summary>
+    ///     Gets an OpenAI response without starting a new thread.
+    /// </summary>
+    /// <param name="text">The text to send to the OpenAI service.</param>
+    /// <param name="systemPrompt">The system prompt to be used by the OpenAI service.</param>
+    /// <param name="pilot">The name of the pilot to influence the response.</param>
+    /// <returns>
+    ///     An `OpenAiChatResponse` object containing the response from the OpenAI service.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    ///     If `text`, `systemPrompt`, or `pilot` is empty or null.
+    /// </exception>
+    Task<Result<OpenAiChatResponse>> GetOpenAiResponseWithoutThread(string text, string systemPrompt, string pilot = null);
 
     /// <summary>
     ///     Gets an OpenAI image response.

@@ -1,20 +1,20 @@
 ﻿using OpenAI;
 using OpenAI.Threads;
 using WK.OpenAiWrapper.Interfaces.Services;
-using WK.OpenAiWrapper.Models;
+using WK.OpenAiWrapper.Models.Responses;
 using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Services;
 
 internal class SummaryService(string summaryAssistantId) : ISummaryService
 {
-    public async Task<Result<OpenAiResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10)
+    public async Task<Result<OpenAiThreadResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10)
     {
         using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
         return await GetConversationSummary(threadId, client, messageCount).ConfigureAwait(false);
     }
         
-    public async Task<Result<OpenAiResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount)
+    public async Task<Result<OpenAiThreadResponse>> GetConversationSummary(string threadId, OpenAIClient client, int messageCount)
     {
         ThreadResponse? threadResponse = null;
         try
@@ -24,13 +24,13 @@ internal class SummaryService(string summaryAssistantId) : ISummaryService
             var conversation = string.Join("\n\n", listMessagesAsync.Items.Reverse().Select(r => $"{r.Role}: {r.PrintContent()}")); 
             threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
                 { new Message(conversation) })).ConfigureAwait(false);
-            Result<OpenAiResponse> result = await Client.Instance.GetTextAnswer(threadResponse.Id, client, summaryAssistantId).ConfigureAwait(false);
+            Result<OpenAiThreadResponse> result = await Client.Instance.GetTextAnswer(threadResponse.Id, client, summaryAssistantId).ConfigureAwait(false);
 
-            return !result.IsSuccess ? Result<OpenAiResponse>.Error(result.Errors.ToArray()) : result;
+            return !result.IsSuccess ? Result<OpenAiThreadResponse>.Error(result.Errors.ToArray()) : result;
         }
         catch (Exception e)
         {
-            return Result<OpenAiResponse>.Error(e.Message);
+            return Result<OpenAiThreadResponse>.Error(e.Message);
         }
         finally
         {

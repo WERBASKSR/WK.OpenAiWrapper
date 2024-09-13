@@ -6,17 +6,11 @@ public class Result<T>
 {
     protected Result() { }
 
-    public Result(T value)
-    {
-        Value = value;
-    }
+    public Result(T? value) => Value = value; 
 
-    protected internal Result(T value, string successMessage) : this(value)
-    {
-        SuccessMessage = successMessage;
-    }
+    protected internal Result(T? value, string successMessage) : this(value) => SuccessMessage = successMessage; 
 
-    [JsonInclude] public T Value { get; init; }
+    [JsonInclude] public T? Value { get; init; }
 
     [JsonInclude] public bool IsSuccess { get; protected set; } = true;
 
@@ -26,27 +20,22 @@ public class Result<T>
 
     [JsonIgnore] public Type ValueType => typeof(T);
 
-    [JsonInclude] public IEnumerable<string> Errors { get; protected set; } = Array.Empty<string>();
+    [JsonInclude] public List<string> Errors { get; protected set; } = new ();
 
-    [JsonInclude]
-    public IEnumerable<ValidationError> ValidationErrors { get; protected set; } = Array.Empty<ValidationError>();
+    [JsonInclude] public List<ValidationError> ValidationErrors { get; protected set; } = new ();
 
-    /// <summary>
-    ///     Returns the current value.
-    /// </summary>
-    /// <returns></returns>
-    public object GetValue() => Value;
+    public object? GetValue() => Value ?? default;
 
-    public static implicit operator T(Result<T> result) => result.Value;
+    public static implicit operator T?(Result<T?>? result) => (result != null ? result.Value : default) ?? default;
 
-    public static implicit operator Result<T>(T value) => new(value);
+    public static implicit operator Result<T?>(T? value) => new (value);
 
     /// <summary>
     ///     Represents a successful operation and accepts a values as the result of the operation
     /// </summary>
     /// <param name="value">Sets the Value property</param>
     /// <returns>A Result<typeparamref name="T" /></returns>
-    public static Result<T> Success(T value) => new(value);
+    public static Result<T?> Success(T? value) => new(value);
 
     /// <summary>
     ///     Represents a successful operation and accepts a values as the result of the operation
@@ -55,10 +44,7 @@ public class Result<T>
     /// <param name="value">Sets the Value property</param>
     /// <param name="successMessage">Sets the SuccessMessage property</param>
     /// <returns>A Result<typeparamref name="T" /></returns>
-    public static Result<T> Success(T value, string successMessage)
-    {
-        return new Result<T>(value, successMessage);
-    }
+    public static Result<T?> Success(T? value, string successMessage) => new(value, successMessage);
 
     /// <summary>
     ///     Represents an error that occurred during the execution of the service.
@@ -66,7 +52,12 @@ public class Result<T>
     /// </summary>
     /// <param name="errorMessages">A list of string error messages.</param>
     /// <returns>A Result<typeparamref name="T" /></returns>
-    public static Result<T> Error(params string[] errorMessages) => new() { Errors = errorMessages, IsSuccess = false, SuccessMessage = "Error" };
+    public static Result<T?> Error(params string[] errorMessages)
+    {
+        var result = new Result<T?> { IsSuccess = false, SuccessMessage = $"Error {errorMessages?.FirstOrDefault() ?? string.Empty}" };
+        if (errorMessages != null) result.Errors.AddRange(errorMessages);
+        return result;
+    }
 
     public override string ToString() => IsSuccess ? SuccessMessage : string.Join(Environment.NewLine, Errors);
 }
