@@ -24,7 +24,7 @@ internal record Assistant(string? User, Pilot Pilot) : IEquatable<(string user, 
         return new CreateAssistantRequest(Pilot.Model, UserHelper.GetPilotUserKey(Pilot.Name, User), Pilot.Description, 
              $"{Pilot.Instructions}\r\n{userPrompt}", 
              Pilot.Tools, Pilot.ToolResources, UserHelper.GetDictionaryWithUser(User), 
-             responseFormat: Pilot.JsonResponse ? ChatResponseFormat.Json : ChatResponseFormat.Auto);
+             responseFormat: Pilot.JsonResponse ? ChatResponseFormat.Json : ChatResponseFormat.Text);
     }
 
     public static bool operator ==(Assistant assistant, (string user, string pilot) keyTuple) => assistant.Equals(keyTuple);

@@ -353,18 +353,6 @@ public class ClientTests
                    {"OpenAi:ApiKey": "apikey",
                        "OpenAi:Pilots": [
                            {
-                               "Name": "Master",
-                               "Instructions": "You are a helpful assistant.",
-                               "Description": "This is a Fallback assistant for all general questions and tasks.",
-                               "ToolFunctions": [
-                                 {
-                                   "MethodFullName": "WK.OpenAiWrapper.Tests.AdoCom.GetWIInfos"
-                                 },
-                                 {
-                                   "Type": "file_search"
-                                 }]
-                           },
-                           {
                                "Name": "Weather",
                                "Instructions": "You are a weather expert.",
                                "Description": "This is a weather assistant for weather questions.",

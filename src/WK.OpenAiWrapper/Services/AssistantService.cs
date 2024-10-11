@@ -23,8 +23,21 @@ internal class AssistantService : IAssistantService
         using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
 
         ListResponse<AssistantResponse> assistantsResponse = await client.AssistantsEndpoint.ListAssistantsAsync().ConfigureAwait(false);
-        var assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == assistantName)
+
+        AssistantResponse? assistantResponse;
+        try
+        {
+            assistantResponse = assistantsResponse.Items.SingleOrDefault(a => a.Name == assistantName)
                                 ?? await client.AssistantsEndpoint.CreateAssistantAsync(assistantRequest).ConfigureAwait(false);
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+
+        
         return assistantResponse;
     }
 
