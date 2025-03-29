@@ -17,7 +17,7 @@ jobs:
       CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 #fetch-depth is needed for GitVersion
       
@@ -38,7 +38,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.0.x
       - name: Restore dependencies
         run: dotnet restore src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj
       - name: Build
