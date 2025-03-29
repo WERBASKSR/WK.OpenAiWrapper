@@ -17,7 +17,7 @@ jobs:
       CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 #fetch-depth is needed for GitVersion
       
@@ -44,7 +44,7 @@ jobs:
       - name: Build
         run: dotnet build src/WK.OpenAiWrapper/WK.OpenAiWrapper.csproj -c Release -p:Version='${{ steps.gitversion.outputs.SemVer }}'
       - name: Upload NuGet package to GitHub
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: nugetPackage
           path: artifacts/package/release/
