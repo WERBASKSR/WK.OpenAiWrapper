@@ -1,4 +1,5 @@
-﻿using OpenAI;
+﻿using MoreLinq;
+using OpenAI;
 using OpenAI.Assistants;
 using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Interfaces.Services;
@@ -53,12 +54,15 @@ internal class AssistantService : IAssistantService
         using OpenAIClient client = new (IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
         var assistant = await client.AssistantsEndpoint.RetrieveAssistantAsync(assistantId).ConfigureAwait(false);
         var newCodeInterpreterResources = assistant.ToolResources?.CodeInterpreter;
+        HashSet<string> vectorStoreIds = [];
         var newFileSearchResources = new FileSearchResources(vectorStoreId);
-        var storeIds = assistant.ToolResources?.FileSearch?.VectorStoreIds;
-        if (storeIds != null) ((List<string>)newFileSearchResources.VectorStoreIds).AddRange(storeIds);
+        assistant.ToolResources?.FileSearch?.VectorStoreIds?.ForEach(s => vectorStoreIds.Add(s));
+        var storeIds = (List<string>)newFileSearchResources.VectorStoreIds;
+        storeIds.Clear();
+        storeIds.AddRange(vectorStoreIds);
         ToolResources toolResources = new (newFileSearchResources, newCodeInterpreterResources);
         var assistantTools = ((List<Tool>)assistant.Tools);
-        if (!assistantTools.Contains(Tool.FileSearch)) assistantTools.Add(Tool.FileSearch);
+        if (assistantTools.All(t => t.Type != Tool.FileSearch.Type)) assistantTools.Add(Tool.FileSearch);
         var assistantRequest = new CreateAssistantRequest(assistant, assistant.Model, assistant.Name, assistant.Description, assistant.Instructions, assistantTools, toolResources);
         return await client.AssistantsEndpoint.ModifyAssistantAsync(assistantId, assistantRequest);
     }
