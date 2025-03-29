@@ -18,6 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="InterfaceFactory" />
       <PackageReference Include="Microsoft.Extensions.Configuration" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
       <PackageReference Include="OpenAI-DotNet" />

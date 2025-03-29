@@ -1,6 +1,7 @@
 ﻿using OpenAI.Assistants;
 using OpenAI.Threads;
 using OpenAI.VectorStores;
+using WK.OpenAiWrapper.Interfaces.Clients;
 
 namespace WK.OpenAiWrapper.Extensions;
 
@@ -19,7 +20,7 @@ internal static class VectorStoreFileResponseExtensions
             case VectorStoreFileStatus.NotStarted:
             case VectorStoreFileStatus.InProgress:
             case VectorStoreFileStatus.Cancelling:
-                vectorStoreFileResponse = await Client.Instance
+                vectorStoreFileResponse = await IOpenAiClient.GetRequiredInstance()
                     .GetVectorStoreFileStatusAsync(vectorStoreFileResponse.VectorStoreId, vectorStoreFileResponse.Id)
                     .WaitForDone().ConfigureAwait(false);
                 break;

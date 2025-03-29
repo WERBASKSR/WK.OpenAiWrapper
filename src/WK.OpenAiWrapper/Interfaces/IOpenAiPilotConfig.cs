@@ -1,8 +1,9 @@
-﻿using WK.OpenAiWrapper.Models;
+﻿using InterfaceFactory;
+using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Interfaces;
-public interface IOpenAiPilotConfig
+public interface IOpenAiPilotConfig : IFactory<IOpenAiPilotConfig>
 {
     /// <summary>
     /// Retrieves a Pilot by their name.

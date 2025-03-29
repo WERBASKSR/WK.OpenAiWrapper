@@ -1,10 +1,11 @@
-﻿using OpenAI;
+﻿using InterfaceFactory;
+using OpenAI;
 using WK.OpenAiWrapper.Models.Responses;
 using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Interfaces.Services;
 
-internal interface ISummaryService
+internal interface ISummaryService : IFactory<ISummaryService>
 {
     Task<Result<OpenAiThreadResponse>> GetConversationSummaryResponse(string threadId, int messageCount = 10);
 

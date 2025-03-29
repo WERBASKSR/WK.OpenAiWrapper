@@ -1,14 +1,16 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using OpenAI;
 using WK.OpenAiWrapper.Extensions;
+using WK.OpenAiWrapper.Interfaces;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Result;
 using Xunit;
 using WK.OpenAiWrapper.Interfaces.Clients;
+using WK.OpenAiWrapper.Interfaces.Services;
 using WK.OpenAiWrapper.Models.Responses;
+using WK.OpenAiWrapper.Helpers;
 
 namespace WK.OpenAiWrapper.Tests;
 
@@ -195,23 +197,61 @@ public class ClientTests
         //Assert
         Assert.True(result.IsSuccess);
     }
-    
+
+    [Fact]
+    public async Task IOpenAiClient_UploadFileInNewVectorStore_FileIsUploaded()
+    {
+        //Arrange
+        IServiceProvider serviceProvider = ArrangeOpenAiClient();
+        var client = serviceProvider.GetService<IOpenAiClient>() as Client;
+        var fileName = @"C:\Users\SBechtel\OneDrive - Werbas KSR GmbH - BB\Desktop\testfile.txt";
+
+        //Act
+        var result = await client.UploadToNewVectorStore([fileName], "teststore", true);
+
+        //Assert
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task IOpenAiClient_GetAnswerWithVectorStore_FileForAnswerWasUsed()
+    {
+        //Arrange
+        IServiceProvider serviceProvider = ArrangeOpenAiClient();
+        var client = serviceProvider.GetService<IOpenAiClient>() as Client;
+        var storeId = "vs_67e7be11da408191bd14848d2f800005";
+        var assistantHandler = IAssistantHandler.GetRequiredInstance();
+        var assistantService = IAssistantService.GetRequiredInstance();
+        var pilotName = assistantHandler.PilotDescriptions.First().Name;
+        var user = "UnitTest";
+        var assistantResponse = await assistantHandler.GetOrCreateAssistantResponse(user, pilotName);
+        await assistantService.ReplaceVectorStoreIdToAssistantByIdAsync(assistantResponse.Id, storeId);
+
+        //Act
+        var result = await client.GetOpenAiResponseWithNewThread(
+            "Erstelle eine sehr kurze Zusammenfassung der AI Service Web API Documentation auf Deutsch.",
+            pilotName, user);
+
+        //Assert
+        Assert.True(result.IsSuccess);
+    }
+
     [Fact]
     public async Task IOpenAiClient_UploadFileInVectorStore_FileIsUploaded()
     {
         //Arrange
         IServiceProvider serviceProvider = ArrangeOpenAiClient();
         var client = serviceProvider.GetService<IOpenAiClient>() as Client;
-        var fileName = @"C:\Users\sbechtel\OneDrive - Werbas GmbH\Desktop\openai store\Result.Void.cs.txt";
-        var storeId = "vs_fozloSRtH9k8KrYRa1znvXCF";
-        
+        var fileName = @"C:\Users\SBechtel\OneDrive - Werbas KSR GmbH - BB\Desktop\testfile.txt";
+        var storeId = "vs_67e79f24915481919f88a1e4eb815ce0";
+
         //Act
         var result = await client.UploadToVectorStore([fileName], storeId);
-        
+
         //Assert
         Assert.True(result.IsSuccess);
     }
-    
+
     [Fact]
     public async Task IOpenAiClient_GetOpenAiImageResponse_AiImageInResponse()
     {

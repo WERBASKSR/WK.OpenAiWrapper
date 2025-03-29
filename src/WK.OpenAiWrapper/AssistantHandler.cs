@@ -1,13 +1,16 @@
-﻿using Microsoft.Extensions.Options;
+﻿using InterfaceFactory;
+using Microsoft.Extensions.Options;
 using OpenAI.Assistants;
 using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Interfaces;
+using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Options;
 
 namespace WK.OpenAiWrapper;
 
+[IgnoreContainerRegistration]
 internal class AssistantHandler(IOptions<OpenAiOptions> options) : IAssistantHandler
 {
     public ThreadingDictionary<string, string?> AssistantIds { get; } = new();
@@ -17,7 +20,7 @@ internal class AssistantHandler(IOptions<OpenAiOptions> options) : IAssistantHan
     
     public Assistant GetCreateAssistant(string? user, string pilotName)
     {
-        string pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
+        var pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
         var assistant = Assistants.GetValue(pilotUserKey);
         if (assistant != null) return assistant;
 
@@ -39,9 +42,9 @@ internal class AssistantHandler(IOptions<OpenAiOptions> options) : IAssistantHan
     {
         var pilotUserKey = UserHelper.GetPilotUserKey(pilotName, user);
         var assistantId = AssistantIds.GetValue(pilotUserKey);
-        if (assistantId != null) return await Client.Instance.GetAssistantResponseByIdAsync(assistantId).ConfigureAwait(false);
+        if (assistantId != null) return await IOpenAiClient.GetRequiredInstance().GetAssistantResponseByIdAsync(assistantId).ConfigureAwait(false);
 
-        AssistantResponse assistantResponse = await Client.Instance.GetOrCreateAssistantResponse(pilotUserKey, GetCreateAssistantRequest(user, pilotName)).ConfigureAwait(false);
+        var assistantResponse = await IOpenAiClient.GetRequiredInstance().GetOrCreateAssistantResponse(pilotUserKey, GetCreateAssistantRequest(user, pilotName)).ConfigureAwait(false);
         AssistantIds.Add(pilotUserKey, assistantResponse.Id);
         return assistantResponse;
     }

@@ -1,10 +1,11 @@
-﻿using OpenAI.Assistants;
+﻿using InterfaceFactory;
+using OpenAI.Assistants;
 using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Models;
 
 namespace WK.OpenAiWrapper.Interfaces;
 
-internal interface IAssistantHandler
+internal interface IAssistantHandler : IFactory<IAssistantHandler>
 {
     ThreadingDictionary<string, string?> AssistantIds { get; }
     ThreadingDictionary<string, Assistant> Assistants { get; }

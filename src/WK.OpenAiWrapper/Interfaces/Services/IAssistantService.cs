@@ -1,8 +1,9 @@
-﻿using OpenAI.Assistants;
+﻿using InterfaceFactory;
+using OpenAI.Assistants;
 
 namespace WK.OpenAiWrapper.Interfaces.Services;
 
-internal interface IAssistantService
+internal interface IAssistantService : IFactory<IAssistantService>
 {
     Task<bool> DeleteAssistantAsync(string assistantId);
     Task<AssistantResponse> GetAssistantResponseByIdAsync(string assistantId);

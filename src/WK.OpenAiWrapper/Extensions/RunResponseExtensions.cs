@@ -1,6 +1,7 @@
 ﻿using OpenAI.Assistants;
 using OpenAI.Threads;
 using WK.OpenAiWrapper.Interfaces;
+using WK.OpenAiWrapper.Interfaces.Clients;
 
 namespace WK.OpenAiWrapper.Extensions;
 
@@ -18,7 +19,7 @@ internal static class RunResponseExtensions
         switch (runResponse.Status)
         {
             case RunStatus.RequiresAction:
-                var assistantResponse = await Client.Instance.GetAssistantResponseByIdAsync(runResponse.AssistantId).ConfigureAwait(false);
+                var assistantResponse = await IOpenAiClient.GetRequiredInstance().GetAssistantResponseByIdAsync(runResponse.AssistantId).ConfigureAwait(false);
                 IReadOnlyList<ToolOutput> outputs = await assistantResponse.GetToolOutputsAsync(runResponse.RequiredAction.SubmitToolOutputs.ToolCalls).ConfigureAwait(false);
                 runResponse = await runResponse.SubmitToolOutputsAsync(outputs).ConfigureAwait(false);
                 runResponse = await runResponse.WaitForDone(assistantHandler).ConfigureAwait(false);

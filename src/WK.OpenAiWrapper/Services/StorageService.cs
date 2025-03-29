@@ -8,6 +8,7 @@ using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Interfaces.Services;
 using WK.OpenAiWrapper.Models.Responses;
+using WK.OpenAiWrapper.Interfaces.Clients;
 
 namespace WK.OpenAiWrapper.Services;
 
@@ -17,7 +18,7 @@ internal class StorageService : IStorageService
     {
         try
         {
-            using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
+            using OpenAIClient client = new(IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
             var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName, expiresAfter: 360)).ConfigureAwait(false);
             return await UploadToVectorStore(filePaths, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
         }
@@ -32,7 +33,7 @@ internal class StorageService : IStorageService
         try
         {
             var list = new List<(string FileName, string FileId)>();
-            using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
+            using OpenAIClient client = new(IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
 
             foreach (var filePath in filePaths)
             {
@@ -54,7 +55,7 @@ internal class StorageService : IStorageService
     {
         try
         {
-            using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
+            using OpenAIClient client = new(IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
             var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName)).ConfigureAwait(false);
 
             return await UploadToVectorStore(files, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
@@ -70,7 +71,7 @@ internal class StorageService : IStorageService
         try
         {
             var list = new List<(string FileName, string FileId)>();
-            using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
+            using OpenAIClient client = new(IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
 
             foreach (var file in files)
             {
@@ -90,7 +91,7 @@ internal class StorageService : IStorageService
     {
         try
         {
-            using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
+            using OpenAIClient client = new(IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
             var vectorStore = await client.VectorStoresEndpoint.CreateVectorStoreAsync(new CreateVectorStoreRequest(vectorStoreName, expiresAfter: 360)).ConfigureAwait(false);
             return await UploadStreamToVectorStore(fileStream, fileName, vectorStore.Id, waitForDoneStatus).ConfigureAwait(false);
         }
@@ -104,7 +105,7 @@ internal class StorageService : IStorageService
     {
         try
         {
-            using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
+            using OpenAIClient client = new(IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
             FileResponse fileResponse = await client.FilesEndpoint.UploadFileAsync(new FileUploadRequest(fileStream, fileName, FilePurpose.Assistants)).ConfigureAwait(false);
             VectorStoreFileResponse vectorStoreFileResponse = await client.VectorStoresEndpoint.CreateVectorStoreFileAsync(vectorStoreId, fileResponse).ConfigureAwait(false);
             await fileStream.DisposeAsync().ConfigureAwait(false);
@@ -121,7 +122,7 @@ internal class StorageService : IStorageService
     {
         try
         {
-            using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
+            using OpenAIClient client = new(IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
             var fileListAll = await client.FilesEndpoint.ListFilesAsync(FilePurpose.Assistants).ConfigureAwait(false);
             var fileIds = fileListAll
                 .Where(r => string.Equals(r.FileName, fileName, StringComparison.OrdinalIgnoreCase))
@@ -144,7 +145,7 @@ internal class StorageService : IStorageService
     {
         try
         {
-            using OpenAIClient client = new(Client.Instance.Options.Value.ApiKey);
+            using OpenAIClient client = new(IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
             await client.VectorStoresEndpoint.DeleteVectorStoreFileAsync(vectorStoreId, fileId).ConfigureAwait(false);
             await client.FilesEndpoint.DeleteFileAsync(fileId).ConfigureAwait(false);
             return new OpenAiVectorStoreResponse(vectorStoreId, fileId);
@@ -157,7 +158,7 @@ internal class StorageService : IStorageService
 
     public async Task<VectorStoreFileResponse> GetVectorStoreFileStatusAsync(string vectorStoreId, string fileId)
     {
-        using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
+        using OpenAIClient client = new (IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
         return await client.VectorStoresEndpoint.GetVectorStoreFileAsync(vectorStoreId, fileId).ConfigureAwait(false);
     }
     

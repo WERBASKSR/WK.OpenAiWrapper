@@ -1,9 +1,9 @@
-﻿using WK.OpenAiWrapper.Extensions;
+﻿using InterfaceFactory.ContainerAdapter.DependencyInjection;
+using WK.OpenAiWrapper.Extensions;
 using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Helpers;
 using WK.OpenAiWrapper.Options;
 using WK.OpenAiWrapper.Constants;
-using WK.OpenAiWrapper.Services;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Threads;
@@ -23,22 +23,18 @@ namespace WK.OpenAiWrapper;
 
 internal partial class Client : IOpenAiClient
 {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-    internal static Client Instance;
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+    public IOptions<OpenAiOptions> Options { get; }
+    public IAssistantHandler AssistantHandler { get; }
 
-    internal readonly IOptions<OpenAiOptions> Options;
-    internal readonly IAssistantHandler AssistantHandler;
-
-    public Client(IOptions<OpenAiOptions> options, IAssumptionService assumptionService, IStorageService storageService, ISummaryService summaryService, IAssistantService assistantService, IAssistantHandler assistantHandler)
+    public Client(IOptions<OpenAiOptions> options, IAssumptionService assumptionService, IStorageService storageService, ISummaryService summaryService, IAssistantService assistantService, IAssistantHandler assistantHandler, IServiceProvider serviceProvider)
     {
+        serviceProvider.UseInterfaceFactory();
         Options = options;
         AssistantHandler = assistantHandler;
         AssistantService = assistantService;
         SummaryService = summaryService;
         StorageService = storageService;
         AssumptionService = assumptionService;
-        Instance = this;
     }
 
     public async Task<Result<OpenAiImageResponse>> GetOpenAiImageResponse(string text)
@@ -173,9 +169,9 @@ internal partial class Client : IOpenAiClient
         }
     }
     
-    internal async Task<Result<OpenAiThreadResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
+    public async Task<Result<OpenAiThreadResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId)
     {
-        var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId), _ => { })
+        var runResponse = await client.ThreadsEndpoint.CreateRunAsync(threadId, new CreateRunRequest(assistantId), _ => Task.CompletedTask)
             .WaitForDone(AssistantHandler).ConfigureAwait(false);
 
         if (runResponse.Status != RunStatus.Completed)

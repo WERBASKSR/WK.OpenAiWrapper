@@ -1,10 +1,18 @@
-﻿using WK.OpenAiWrapper.Result;
+﻿using InterfaceFactory;
+using WK.OpenAiWrapper.Result;
 using WK.OpenAiWrapper.Models.Responses;
+using Microsoft.Extensions.Options;
+using WK.OpenAiWrapper.Options;
+using OpenAI;
 
 namespace WK.OpenAiWrapper.Interfaces.Clients;
 
-public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOpenAiAssumptionClient, IOpenAiAssistantClient
+public interface IOpenAiClient : IOpenAiStorageClient, IOpenAiSummaryClient, IOpenAiAssumptionClient, IOpenAiAssistantClient, IFactory<IOpenAiClient>
 {
+    internal IOptions<OpenAiOptions> Options { get; }
+    internal IAssistantHandler AssistantHandler { get; }
+    internal Task<Result<OpenAiThreadResponse>> GetTextAnswer(string threadId, OpenAIClient client, string assistantId);
+
     /// <summary>
     /// Gets an OpenAI response within an existing thread.
     /// </summary>

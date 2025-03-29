@@ -1,4 +1,5 @@
-﻿using WK.OpenAiWrapper.Models;
+﻿using WK.OpenAiWrapper.Interfaces.Clients;
+using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Options;
 
 namespace WK.OpenAiWrapper.Extensions;
@@ -20,7 +21,7 @@ internal static class OpenAiOptionsExtensions
     
     internal static async Task<Pilot?> DeletePilotAsync(this OpenAiOptions options, string pilotName)
     {
-        var client = Client.Instance;
+        var client = IOpenAiClient.GetRequiredInstance();
         var pilot = options.GetPilot(pilotName);
         if (pilot == null) return pilot;
         
@@ -52,7 +53,7 @@ internal static class OpenAiOptionsExtensions
     
     internal static async Task<Pilot?> ModifyAssistantAsync(this OpenAiOptions options, string pilotName, string userName)
     {
-        var client = Client.Instance;
+        var client = IOpenAiClient.GetRequiredInstance();
         var pilot = options.GetPilot(pilotName);
         if (pilot == null) return pilot;
         

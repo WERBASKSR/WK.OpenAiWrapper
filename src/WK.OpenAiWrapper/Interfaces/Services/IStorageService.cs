@@ -1,4 +1,5 @@
-﻿using OpenAI;
+﻿using InterfaceFactory;
+using OpenAI;
 using OpenAI.Threads;
 using OpenAI.VectorStores;
 using WK.OpenAiWrapper.Models.Responses;
@@ -6,7 +7,7 @@ using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Interfaces.Services;
 
-internal interface IStorageService
+internal interface IStorageService : IFactory<IStorageService>
 {
     Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(string[] filePaths, string vectorStoreName, bool waitForDoneStatus = false);
     Task<Result<OpenAiMultipleFilesVectorStoreResponse>> UploadToNewVectorStore(List<(string FileName, byte[] FileBytes)> files, string vectorStoreName, bool waitForDoneStatus = false);

@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using InterfaceFactory;
+using Newtonsoft.Json;
 using OpenAI;
 using OpenAI.Threads;
+using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Interfaces.Services;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Models.Responses;
@@ -8,21 +10,22 @@ using WK.OpenAiWrapper.Result;
 
 namespace WK.OpenAiWrapper.Services;
 
+[IgnoreContainerRegistration]
 internal class AssumptionService(string assumptionAssistantId) : IAssumptionService
 {
     public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionResponse(string textToBeEstimated)
     {
-        using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
+        using OpenAIClient client = new (IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
         return await GetOpenAiPilotAssumption(textToBeEstimated, client).ConfigureAwait(false);
     }
 
     public async Task<Result<OpenAiPilotAssumptionResponse>> GetOpenAiPilotAssumptionWithConversationResponse(string textToBeEstimated, string threadId)
     {
-        using OpenAIClient client = new (Client.Instance.Options.Value.ApiKey);
+        using OpenAIClient client = new (IOpenAiClient.GetRequiredInstance().Options.Value.ApiKey);
         
         var threadResponse = await client.ThreadsEndpoint.RetrieveThreadAsync(threadId).ConfigureAwait(false);
         var lastMessageContent = (await threadResponse.ListMessagesAsync(new ListQuery(1)).ConfigureAwait(false)).Items.Single().PrintContent();
-        Result<OpenAiThreadResponse> conversationSummary = await Client.Instance.SummaryService.GetConversationSummary(threadId, client, 4);
+        Result<OpenAiThreadResponse> conversationSummary = await ISummaryService.GetRequiredInstance().GetConversationSummary(threadId, client, 4);
         string conversationMix = $"Previous Conversation:\n\nSummary: {conversationSummary.Value.Answer}\n\nLast Assistant Message:\n\n{lastMessageContent}";
 
         return await GetOpenAiPilotAssumption($"{conversationMix}\n\n{textToBeEstimated}", client);
@@ -34,8 +37,8 @@ internal class AssumptionService(string assumptionAssistantId) : IAssumptionServ
         try
         {
             threadResponse = await client.ThreadsEndpoint.CreateThreadAsync(new CreateThreadRequest(new[]
-                { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(Client.Instance.AssistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
-            Result<OpenAiThreadResponse> result = await Client.Instance.GetTextAnswer(threadResponse.Id, client, assumptionAssistantId).ConfigureAwait(false);
+                { new Message($"Prompt: {textToBeEstimated}\r\nAvailable pilots:\r\n{JsonConvert.SerializeObject(IOpenAiClient.GetRequiredInstance().AssistantHandler.PilotDescriptions)}") })).ConfigureAwait(false);
+            Result<OpenAiThreadResponse> result = await IOpenAiClient.GetRequiredInstance().GetTextAnswer(threadResponse.Id, client, assumptionAssistantId).ConfigureAwait(false);
             if (!result.IsSuccess) return Result<OpenAiPilotAssumptionResponse>.Error(result.Errors.ToArray());
             return new OpenAiPilotAssumptionResponse(JsonConvert.DeserializeObject<PilotAssumptionContainer>(result.Value.Answer));
         }

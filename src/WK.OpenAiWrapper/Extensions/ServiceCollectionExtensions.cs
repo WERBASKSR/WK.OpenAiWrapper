@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using InterfaceFactory.ContainerAdapter.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using MoreLinq;
 using OpenAI;
 using WK.OpenAiWrapper.Interfaces;
-using WK.OpenAiWrapper.Interfaces.Clients;
 using WK.OpenAiWrapper.Interfaces.Services;
 using WK.OpenAiWrapper.Models;
 using WK.OpenAiWrapper.Options;
@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         ValidatePilots(pilots);
         RegisterOpenAiClient(serviceCollection);
         RegisterServices(serviceCollection);
+        serviceCollection.RegisterInterfaceFactories();
         return serviceCollection;
     }
     
@@ -45,6 +46,7 @@ public static class ServiceCollectionExtensions
         });
         RegisterOpenAiClient(serviceCollection);
         RegisterServices(serviceCollection);
+        serviceCollection.RegisterInterfaceFactories();
         return serviceCollection;
     }
     
@@ -63,16 +65,11 @@ public static class ServiceCollectionExtensions
     {
         serviceCollection.AddTransient(p => new OpenAIClient(new OpenAIAuthentication(p.GetRequiredService<IOptions<OpenAiOptions>>().Value.ApiKey)));
         serviceCollection.AddSingleton<IAssistantHandler>(p => new AssistantHandler(p.GetRequiredService<IOptions<OpenAiOptions>>()));
-        serviceCollection.AddSingleton<IOpenAiClient, Client>();
-        serviceCollection.AddSingleton<IOpenAiPilotConfig, PilotConfig>();
     }    
     private static void RegisterServices(IServiceCollection serviceCollection)
     {
         serviceCollection.AddTransient<IAssumptionService, AssumptionService>(p => GetAssumptionService(p).GetAwaiter().GetResult());
         serviceCollection.AddTransient<ISummaryService, SummaryService>(p => GetSummaryService(p).GetAwaiter().GetResult());
-        serviceCollection.AddTransient<IStorageService, StorageService>();
-        serviceCollection.AddTransient<IAssistantService, AssistantService>();
-        serviceCollection.AddTransient<IFileService, FileService>();
     }
 
     private static async Task<AssumptionService> GetAssumptionService(IServiceProvider serviceProvider)

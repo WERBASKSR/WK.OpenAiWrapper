@@ -11,4 +11,10 @@ internal static class UserHelper
     {
         return $"{pilot}_{user??string.Empty}";
     }
+
+    internal static (string pilot, string user) GetPilotUserTuple(string pilotUserKey)
+    {
+        var pilotUser = pilotUserKey.Split('_');
+        return (pilotUser.First(), pilotUser.Last());
+    }
 }
